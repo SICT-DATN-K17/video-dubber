@@ -1,0 +1,55 @@
+# AI Video Dubbing (EN -> VI)
+
+Du an long tieng tu dong video tieng Anh sang tieng Viet. Co 2 cach su dung:
+- Streamlit UI: thao tac bang giao dien web
+- CLI: chay pipeline tu terminal
+
+## Kien truc pipeline
+
+1. Tach audio tu video (`ffmpeg`)
+2. Speech-to-text bang Whisper
+3. Dich EN -> VI bang OpenAI hoac MarianMT
+4. Tong hop giong noi tieng Viet (edge-tts hoac gTTS)
+5. Tron audio long tieng vao video goc
+6. Xuat video va file phu de `.srt`
+
+## Cai dat
+
+Yeu cau:
+- Python 3.10+
+- ffmpeg va ffprobe co trong PATH
+
+```bash
+pip install -r requirements.txt
+copy .env.example .env
+```
+
+Neu dung OpenAI, dien `OPENAI_API_KEY` vao `.env`.
+
+## Chay Streamlit app
+
+```bash
+streamlit run app.py
+```
+
+## Chay bang CLI
+
+```bash
+python cli.py path/to/video.mp4 --translator marian
+```
+
+Vi du dung OpenAI:
+
+```bash
+python cli.py path/to/video.mp4 --translator openai --openai-api-key sk-...
+```
+
+## Dau ra
+
+- Video da long tieng: `data/outputs/*_dubbed.mp4`
+- Phu de: `data/outputs/*_dubbed.srt`
+
+## Ghi chu
+
+- Whisper/Transformers can tai model lan dau nen se cham hon.
+- MarianMT chay offline, OpenAI cho chat luong dich tot hon.
