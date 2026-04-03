@@ -27,6 +27,7 @@ class DubbingConfig:
     openai_api_key: str = ""
     openai_model: str = "gpt-4o"
     whisper_model: str = "base"
+    compute_device: str = "auto"           # "auto" | "cuda" | "cpu"
     tts_engine: str = "edge-tts"            # "edge-tts" | "gtts"
     tts_voice: str = "female"               # "female" | "male"
     original_volume: float = 0.1            # 0.0 – 1.0
@@ -98,7 +99,7 @@ class DubbingPipeline:
 
             # ── Bước 2: Transcribe ─────────────────────────────────────
             _progress(25, f"Nhận dạng giọng nói (Whisper {cfg.whisper_model})...")
-            transcriber = Transcriber(model_size=cfg.whisper_model)
+            transcriber = Transcriber(model_size=cfg.whisper_model, device=cfg.compute_device)
             segments = transcriber.transcribe(audio_path)
             _progress(40, f"Tìm thấy {len(segments)} segment.")
 
@@ -107,6 +108,8 @@ class DubbingPipeline:
             kwargs = {}
             if cfg.translator_engine == "openai":
                 kwargs = {"api_key": cfg.openai_api_key, "model": cfg.openai_model}
+            elif cfg.translator_engine == "marian":
+                kwargs = {"device": cfg.compute_device}
             translator = get_translator(cfg.translator_engine, **kwargs)
             segments = translator.translate_segments(segments)
             _progress(65, "Dịch hoàn tất.")

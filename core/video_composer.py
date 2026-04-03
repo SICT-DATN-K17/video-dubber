@@ -17,6 +17,7 @@ class VideoComposer:
 		segments: List[Segment],
 		tts_paths: List[str | Path],
 		original_volume: float = 0.1,
+		tts_volume: float = 1.6,
 		video_duration: Optional[float] = None,
 	) -> Path:
 		video_path = Path(video_path)
@@ -40,12 +41,17 @@ class VideoComposer:
 		for idx in range(limit):
 			delay_ms = max(0, int(segments[idx].start * 1000))
 			label = f"t{idx}"
-			filter_parts.append(f"[{idx + 1}:a]adelay={delay_ms}|{delay_ms}[{label}]")
+			filter_parts.append(
+				f"[{idx + 1}:a]volume={tts_volume},adelay={delay_ms}|{delay_ms}[{label}]"
+			)
 			mix_inputs.append(f"[{label}]")
 
 		filter_parts.append(
-			"".join(mix_inputs) + f"amix=inputs={len(mix_inputs)}:duration=first:dropout_transition=0[mix]"
+			"".join(mix_inputs)
+			+ f"amix=inputs={len(mix_inputs)}:duration=first:dropout_transition=2:normalize=0[mix_raw]"
 		)
+		# Limit peaks after boosting TTS to avoid clipping while keeping loudness stable.
+		filter_parts.append("[mix_raw]alimiter=limit=0.95[mix]")
 		filter_complex = ";".join(filter_parts)
 
 		cmd += [

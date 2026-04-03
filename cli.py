@@ -14,6 +14,7 @@ def parse_args() -> argparse.Namespace:
 	parser.add_argument("--openai-api-key", default="")
 	parser.add_argument("--openai-model", default="gpt-4o-mini")
 	parser.add_argument("--whisper-model", default="base")
+	parser.add_argument("--device", choices=["auto", "cuda", "cpu"], default="auto")
 	parser.add_argument("--tts-engine", choices=["edge-tts", "gtts"], default="edge-tts")
 	parser.add_argument("--tts-voice", choices=["female", "male"], default="female")
 	parser.add_argument("--original-volume", type=float, default=0.1)
@@ -33,6 +34,7 @@ def main() -> int:
 		openai_api_key=args.openai_api_key,
 		openai_model=args.openai_model,
 		whisper_model=args.whisper_model,
+		compute_device=args.device,
 		tts_engine=args.tts_engine,
 		tts_voice=args.tts_voice,
 		original_volume=args.original_volume,

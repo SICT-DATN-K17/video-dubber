@@ -1,0 +1,159 @@
+1
+00:00:00,000 --> 00:00:03,000
+What is AI?
+AI là gì?
+
+2
+00:00:03,000 --> 00:00:06,000
+AI stands for artificial intelligence,
+AI đại diện cho trí tuệ nhân tạo,
+
+3
+00:00:06,000 --> 00:00:10,000
+and it's a way for computers to learn and work kind of like us.
+và đó là một cách để máy tính học và làm việc như chúng ta.
+
+4
+00:00:10,000 --> 00:00:15,000
+You can think of AI as a brain for a computer.
+Bạn có thể nghĩ về AI như một bộ não cho một máy tính.
+
+5
+00:00:15,000 --> 00:00:19,000
+Similar to how we use our brains to learn and make decisions,
+Tương tự như cách chúng ta sử dụng bộ não của mình để học và đưa ra quyết định,
+
+6
+00:00:19,000 --> 00:00:24,000
+AI uses special computer programs to do the same thing.
+AI sử dụng các chương trình máy tính đặc biệt để làm điều tương tự.
+
+7
+00:00:24,000 --> 00:00:29,000
+With AI, computers can help us with the stuff that would be really hard
+Với AI, máy tính có thể giúp chúng ta với những thứ thực sự khó khăn.
+
+8
+00:00:29,000 --> 00:00:31,000
+for people to do on their own.
+để mọi người tự làm.
+
+9
+00:00:31,000 --> 00:00:34,000
+They can help doctors diagnose diseases,
+Chúng có thể giúp các bác sĩ chẩn đoán bệnh,
+
+10
+00:00:34,000 --> 00:00:37,000
+allow us to predict the weather more accurately,
+cho phép chúng tôi dự đoán thời tiết một cách chính xác hơn,
+
+11
+00:00:37,000 --> 00:00:40,000
+and even play video games.
+và thậm chí còn chơi video game.
+
+12
+00:00:40,000 --> 00:00:43,000
+It works by using software
+Nó hoạt động bằng cách sử dụng phần mềm
+
+13
+00:00:43,000 --> 00:00:48,000
+to look at lots of information and find patterns.
+để xem xét nhiều thông tin và tìm các mẫu.
+
+14
+00:00:48,000 --> 00:00:51,000
+Just like how you can tell the difference between a dog and a cat,
+Giống như cách bạn có thể phân biệt giữa một con chó và một con mèo,
+
+15
+00:00:51,000 --> 00:00:54,000
+AI can learn to recognize things too.
+AI cũng có thể học nhận diện mọi thứ.
+
+16
+00:00:54,000 --> 00:00:58,000
+There are three main types of AI,
+Có ba loại AI chính,
+
+17
+00:00:58,000 --> 00:01:04,000
+supervised, unsupervised, and reinforcement learning.
+giám sát, không giám sát, và reinforcement learning.
+
+18
+00:01:04,000 --> 00:01:07,000
+Each type learns in its own special way,
+Mỗi loại học theo cách riêng của nó,
+
+19
+00:01:07,000 --> 00:01:11,000
+but they all use lots of data to get better at what they do.
+nhưng tất cả họ đều sử dụng rất nhiều dữ liệu để cải thiện những gì họ làm.
+
+20
+00:01:11,000 --> 00:01:15,000
+AI is important because it helps us do things faster,
+AI quan trọng vì nó giúp chúng ta làm nhanh hơn,
+
+21
+00:01:15,000 --> 00:01:19,000
+more accurately, and sometimes even better than we could on our own.
+chính xác hơn, và đôi khi còn tốt hơn những gì chúng ta có thể làm cho riêng mình.
+
+22
+00:01:19,000 --> 00:01:23,000
+Plus, it can help us solve really complex problems
+Ngoài ra, nó có thể giúp chúng ta giải quyết những vấn đề thực sự phức tạp
+
+23
+00:01:23,000 --> 00:01:26,000
+that we might not be able to figure out by ourselves.
+mà chúng ta có thể không thể tự tìm ra.
+
+24
+00:01:26,000 --> 00:01:29,000
+With AI, the possibilities are endless,
+Với AI, các khả năng là vô hạn,
+
+25
+00:01:29,000 --> 00:01:32,000
+from self-driving cars to personal assistance.
+từ xe tự lái đến hỗ trợ cá nhân.
+
+26
+00:01:32,000 --> 00:01:36,000
+AI is changing the way we live and work.
+AI đang thay đổi cách chúng ta sống và làm việc.
+
+27
+00:01:36,000 --> 00:01:38,000
+So the next time you hear about AI,
+Vì vậy, lần tiếp theo bạn nghe về AI,
+
+28
+00:01:38,000 --> 00:01:42,000
+just remember that it's like a smart brain for computers,
+Chỉ cần nhớ rằng đó là một bộ não thông minh cho máy tính,
+
+29
+00:01:42,000 --> 00:01:44,000
+helping us to solve big problems
+giúp chúng tôi giải quyết những vấn đề lớn
+
+30
+00:01:44,000 --> 00:01:48,000
+and do things we never thought possible.
+và làm những điều mà chúng ta chưa bao giờ nghĩ là có thể.
+
+31
+00:01:48,000 --> 00:01:55,000
+To learn more about AI, check out our website at gcfglobal.org.
+Để học thêm về AI, hãy xem trang web của chúng tôi tại gcfglobal.org.
+
+32
+00:01:56,000 --> 00:02:02,000
+Gcf Global. Creating opportunities for a better life.
+Gcf Global. tạo ra cơ hội cho một cuộc sống tốt hơn.

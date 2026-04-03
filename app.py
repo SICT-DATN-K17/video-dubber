@@ -72,7 +72,7 @@ with st.sidebar:
     translator_choice = st.radio(
         "Chọn engine",
         options=["OpenAI GPT-4o", "MarianMT (Offline)"],
-        index=0,
+        index=1,
         label_visibility="collapsed",
         help="OpenAI cho chất lượng cao hơn; MarianMT chạy offline không cần API key.",
     )
@@ -98,6 +98,12 @@ with st.sidebar:
         options=["tiny", "base", "small", "medium", "large"],
         value="base",
         help="Larger = chính xác hơn nhưng chậm hơn",
+    )
+    compute_device = st.selectbox(
+        "Thiết bị tính toán",
+        ["auto", "cuda", "cpu"],
+        index=0,
+        help="auto: tự chọn CUDA nếu có; cuda: ép chạy GPU; cpu: ép chạy CPU",
     )
 
     st.divider()
@@ -195,7 +201,7 @@ with tab_upload:
 
                 # ── Bước 2: Transcribe ────────────────────────────────
                 status_text.markdown("**⏳ Bước 2/5:** Đang nhận dạng giọng nói (Whisper)...")
-                transcriber = Transcriber(model_size=whisper_model)
+                transcriber = Transcriber(model_size=whisper_model, device=compute_device)
                 segments = transcriber.transcribe(audio_path)
                 status_text.markdown(f"✅ **Bước 2/5:** Tìm thấy **{len(segments)}** segment.")
                 progress_bar.progress(40)
@@ -213,6 +219,8 @@ with tab_upload:
                 kwargs = {}
                 if engine_key == "openai":
                     kwargs = {"api_key": api_key, "model": openai_model}
+                elif engine_key == "marian":
+                    kwargs = {"device": compute_device}
                 translator = get_translator(engine_key, **kwargs)
                 segments = translator.translate_segments(segments)
                 status_text.markdown("✅ **Bước 3/5:** Dịch hoàn tất!")
