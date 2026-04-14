@@ -1,0 +1,114 @@
+1
+00:00:00,000 --> 00:00:09,500
+When you hear the term artificial intelligence, what comes to mind?
+Khi bạn nghe thấy thuật ngữ trí tuệ nhân tạo, điều gì xuất hiện trong tâm trí bạn?
+
+2
+00:00:09,500 --> 00:00:11,360
+Superpowered robots?
+Những robot siêu mạnh mẽ?
+
+3
+00:00:11,360 --> 00:00:13,920
+Hyperintelligent devices?
+Các thiết bị hyperintillat?
+
+4
+00:00:13,920 --> 00:00:18,920
+Science fiction has familiarized the world with the concept, but outside of Hollywood,
+khoa học viễn tưởng đã quen thuộc với thế giới với khái niệm đó, nhưng bên ngoài Hollywood,
+
+5
+00:00:18,920 --> 00:00:23,640
+what is artificial intelligence and what can AI actually do?
+trí tuệ nhân tạo là gì và AI thực sự có thể làm gì?
+
+6
+00:00:23,640 --> 00:00:29,980
+For starters, AI involves using computers to do things that usually require human intelligence.
+Trước tiên, AI liên quan đến việc sử dụng máy tính để làm những điều thường đòi hỏi trí tuệ con người.
+
+7
+00:00:29,980 --> 00:00:33,280
+Humans can see with their eyes and process what they see.
+Con người có thể thấy bằng mắt và xử lý những gì họ thấy.
+
+8
+00:00:33,280 --> 00:00:37,100
+We can understand our environments and move around within them.
+Chúng ta có thể hiểu các môi trường của mình và di chuyển xung quanh trong chúng.
+
+9
+00:00:37,100 --> 00:00:42,320
+Our brains have the ability to see patterns, and we have the ability to understand spoken
+Bộ não của chúng ta có khả năng nhìn thấy các mẫu, và chúng ta có khả năng hiểu tiếng nói.
+
+10
+00:00:42,320 --> 00:00:44,200
+language.
+ngôn ngữ.
+
+11
+00:00:44,200 --> 00:00:48,280
+Artificial intelligence is a broad branch of computer science that includes many different
+trí tuệ EX là một nhánh rộng của khoa học máy tính bao gồm nhiều khác nhau
+
+12
+00:00:48,280 --> 00:00:49,640
+terms.
+các thuật ngữ.
+
+13
+00:00:49,640 --> 00:00:55,540
+In order for computers to achieve these capabilities, they require lots and lots of data.
+Để máy tính đạt được những khả năng này, họ yêu cầu rất nhiều dữ liệu.
+
+14
+00:00:55,540 --> 00:01:00,839
+Artificial intelligence sets allow AI algorithms to identify patterns, make predictions, and
+Các bộ trí tuệ bậc cao cho phép các thuật toán AI xác định mẫu, đưa ra dự đoán, và
+
+15
+00:01:00,839 --> 00:01:03,320
+recommend actions.
+các hành động gợi ý.
+
+16
+00:01:03,320 --> 00:01:08,560
+Artificial intelligence is already all around us, but today's best AI still can't compete
+trí tuệ sinh học đã ở khắp mọi nơi quanh chúng ta, nhưng AI giỏi nhất hôm nay vẫn không thể cạnh tranh.
+
+17
+00:01:08,560 --> 00:01:10,920
+with the human brain in some ways.
+với bộ não con người theo một cách nào đó.
+
+18
+00:01:10,920 --> 00:01:16,520
+For example, in 2016, the computer program AlphaGo defeated a legendary professional
+Ví dụ, vào năm 2016, chương trình máy tính AlphaGo đã đánh bại một chuyên gia huyền thoại
+
+19
+00:01:16,520 --> 00:01:17,920
+Go player.
+Go player.
+
+20
+00:01:17,920 --> 00:01:24,039
+But if you asked that same computer to drive a car or walk or even play monopoly, it wouldn't
+Nhưng nếu bạn yêu cầu cùng một máy tính để lái xe hoặc đi bộ hoặc thậm chí chơi độc quyền, nó sẽ không
+
+21
+00:01:24,040 --> 00:01:26,280
+be able to do so on its own.
+có thể tự làm điều đó.
+
+22
+00:01:26,280 --> 00:01:31,800
+AI's computing power is massive, but our human brains are able to tackle a much wider set
+Năng lượng tính toán của AI rất lớn, nhưng bộ não con người của chúng ta có khả năng giải quyết một tập hợp rộng hơn nhiều.
+
+23
+00:01:31,800 --> 00:01:33,120
+of data and methods.
+của dữ liệu và các phương pháp.

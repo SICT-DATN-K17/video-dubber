@@ -9,7 +9,7 @@ Du an long tieng tu dong video tieng Anh sang tieng Viet. Co 2 cach su dung:
 1. Tach audio tu video (`ffmpeg`)
 2. Speech-to-text bang Whisper
 3. Dich EN -> VI bang OpenAI hoac MarianMT
-4. Tong hop giong noi tieng Viet (edge-tts hoac gTTS)
+4. Tong hop giong noi tieng Viet (edge-tts, gTTS hoac VietTTS)
 5. Tron audio long tieng vao video goc
 6. Xuat video va file phu de `.srt`
 
@@ -44,6 +44,12 @@ Vi du dung OpenAI:
 python cli.py path/to/video.mp4 --translator openai --openai-api-key sk-...
 ```
 
+Vi du chon VietTTS:
+
+```bash
+python cli.py path/to/video.mp4 --tts-engine viettts
+```
+
 ## Dau ra
 
 - Video da long tieng: `data/outputs/*_dubbed.mp4`
@@ -53,3 +59,4 @@ python cli.py path/to/video.mp4 --translator openai --openai-api-key sk-...
 
 - Whisper/Transformers can tai model lan dau nen se cham hon.
 - MarianMT chay offline, OpenAI cho chat luong dich tot hon.
+- VietTTS la tuy chon optional. Neu chon `--tts-engine viettts` thi can cai thu vien VietTTS phu hop truoc.

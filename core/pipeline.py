@@ -28,7 +28,9 @@ class DubbingConfig:
     openai_model: str = "gpt-4o"
     whisper_model: str = "base"
     compute_device: str = "auto"           # "auto" | "cuda" | "cpu"
-    tts_engine: str = "edge-tts"            # "edge-tts" | "gtts"
+    sentence_resegment: bool = True
+    silence_threshold: float = 0.45         # split by pauses >= threshold (seconds)
+    tts_engine: str = "edge-tts"            # "edge-tts" | "gtts" | "viettts"
     tts_voice: str = "female"               # "female" | "male"
     original_volume: float = 0.1            # 0.0 – 1.0
     subtitle_mode: str = "bilingual"        # "bilingual" | "vi" | "en" | "none"
@@ -100,7 +102,11 @@ class DubbingPipeline:
             # ── Bước 2: Transcribe ─────────────────────────────────────
             _progress(25, f"Nhận dạng giọng nói (Whisper {cfg.whisper_model})...")
             transcriber = Transcriber(model_size=cfg.whisper_model, device=cfg.compute_device)
-            segments = transcriber.transcribe(audio_path)
+            segments = transcriber.transcribe(
+                audio_path,
+                sentence_resegment=cfg.sentence_resegment,
+                silence_threshold=cfg.silence_threshold,
+            )
             _progress(40, f"Tìm thấy {len(segments)} segment.")
 
             # ── Bước 3: Dịch ───────────────────────────────────────────

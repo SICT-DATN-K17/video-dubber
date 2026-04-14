@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
+import re
 from typing import List
 
 
@@ -15,6 +16,9 @@ class Segment:
 
 class Transcriber:
 	"""Speech-to-text using OpenAI Whisper local model."""
+
+	_SENTENCE_END_RE = re.compile(r"[.!?][\"'\)\]]*$")
+	_LEADING_PUNCT_RE = re.compile(r"^[,.;:!?%\)\]\}]+")
 
 	def __init__(self, model_size: str = "base", device: str = "auto"):
 		try:
@@ -66,7 +70,87 @@ class Transcriber:
 			else:
 				raise
 
-	def transcribe(self, audio_path: str | Path, language: str = "en") -> List[Segment]:
+	@classmethod
+	def _join_text_fragments(cls, texts: List[str]) -> str:
+		joined = ""
+		for part in texts:
+			part = (part or "").strip()
+			if not part:
+				continue
+			if not joined:
+				joined = part
+				continue
+			# Avoid adding a space before punctuation-starting fragments.
+			if cls._LEADING_PUNCT_RE.match(part):
+				joined += part
+			else:
+				joined += " " + part
+		return joined.strip()
+
+	@classmethod
+	def _merge_segments_into_sentences(
+		cls,
+		segments: List[Segment],
+		silence_threshold: float = 0.45,
+	) -> List[Segment]:
+		if not segments:
+			return []
+
+		ordered = sorted(segments, key=lambda s: (s.start, s.end))
+		merged: List[Segment] = []
+		bucket: List[Segment] = []
+		bucket_texts: List[str] = []
+
+		for idx, seg in enumerate(ordered):
+			if seg.end <= seg.start:
+				continue
+
+			text = (seg.text or "").strip()
+			if not text:
+				continue
+
+			bucket.append(seg)
+			bucket_texts.append(text)
+
+			current_text = cls._join_text_fragments(bucket_texts)
+			duration = bucket[-1].end - bucket[0].start
+			is_last = idx == len(ordered) - 1
+			next_gap = 0.0
+			next_starts_lower = False
+			if not is_last:
+				nxt = ordered[idx + 1]
+				next_gap = max(0.0, nxt.start - seg.end)
+				next_text = (nxt.text or "").lstrip()
+				next_starts_lower = bool(next_text) and next_text[0].islower()
+
+			should_flush = False
+			if is_last:
+				should_flush = True
+			elif cls._SENTENCE_END_RE.search(current_text):
+				should_flush = True
+			elif next_gap >= silence_threshold and not next_starts_lower:
+				should_flush = True
+
+			if should_flush and bucket:
+				merged.append(
+					Segment(
+						start=bucket[0].start,
+						end=bucket[-1].end,
+						text=current_text,
+					)
+				)
+				bucket = []
+				bucket_texts = []
+
+		return merged
+
+	def transcribe(
+		self,
+		audio_path: str | Path,
+		language: str = "en",
+		sentence_resegment: bool = True,
+		silence_threshold: float = 0.45,
+	) -> List[Segment]:
 		audio_path = Path(audio_path)
 		if not audio_path.exists():
 			raise FileNotFoundError(f"Audio not found: {audio_path}")
@@ -111,5 +195,12 @@ class Transcriber:
 					text=text,
 				)
 			)
-		return segments
+
+		if not sentence_resegment:
+			return segments
+
+		return self._merge_segments_into_sentences(
+			segments,
+			silence_threshold=silence_threshold,
+		)
 

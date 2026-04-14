@@ -15,7 +15,9 @@ def parse_args() -> argparse.Namespace:
 	parser.add_argument("--openai-model", default="gpt-4o-mini")
 	parser.add_argument("--whisper-model", default="base")
 	parser.add_argument("--device", choices=["auto", "cuda", "cpu"], default="auto")
-	parser.add_argument("--tts-engine", choices=["edge-tts", "gtts"], default="edge-tts")
+	parser.add_argument("--no-sentence-resegment", action="store_true")
+	parser.add_argument("--silence-threshold", type=float, default=0.45)
+	parser.add_argument("--tts-engine", choices=["edge-tts", "gtts", "viettts"], default="edge-tts")
 	parser.add_argument("--tts-voice", choices=["female", "male"], default="female")
 	parser.add_argument("--original-volume", type=float, default=0.1)
 	parser.add_argument("--subtitle-mode", choices=["bilingual", "vi", "en", "none"], default="bilingual")
@@ -35,6 +37,8 @@ def main() -> int:
 		openai_model=args.openai_model,
 		whisper_model=args.whisper_model,
 		compute_device=args.device,
+		sentence_resegment=not args.no_sentence_resegment,
+		silence_threshold=args.silence_threshold,
 		tts_engine=args.tts_engine,
 		tts_voice=args.tts_voice,
 		original_volume=args.original_volume,

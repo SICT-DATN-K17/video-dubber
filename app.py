@@ -112,7 +112,7 @@ with st.sidebar:
     st.markdown("**Text-to-Speech**")
     tts_engine = st.radio(
         "TTS engine",
-        ["edge-tts (Microsoft Neural)", "gTTS (Google)"],
+        ["edge-tts (Microsoft Neural)", "gTTS (Google)", "VietTTS"],
         label_visibility="collapsed",
     )
     tts_voice = st.radio(
@@ -240,7 +240,12 @@ with tab_upload:
 
                 # ── Bước 4: TTS ───────────────────────────────────────
                 status_text.markdown("**⏳ Bước 4/5:** Đang tổng hợp giọng nói tiếng Việt...")
-                engine_str = "edge-tts" if "edge" in tts_engine else "gtts"
+                tts_engine_map = {
+                    "edge-tts (Microsoft Neural)": "edge-tts",
+                    "gTTS (Google)": "gtts",
+                    "VietTTS": "viettts",
+                }
+                engine_str = tts_engine_map.get(tts_engine, "edge-tts")
                 voice_str = "female" if "Nữ" in tts_voice else "male"
                 tts = TTSEngine(engine=engine_str, voice=voice_str)
                 tts_paths = tts.synthesize_all(segments)
