@@ -1,62 +1,90 @@
-# AI Video Dubbing (EN -> VI)
+# AI Video Dubbing (EN to VI)
 
-Du an long tieng tu dong video tieng Anh sang tieng Viet. Co 2 cach su dung:
-- Streamlit UI: thao tac bang giao dien web
-- CLI: chay pipeline tu terminal
+End-to-end pipeline to dub English videos into Vietnamese, with subtitle export and both UI/CLI workflows.
 
-## Kien truc pipeline
+## Project Overview
 
-1. Tach audio tu video (`ffmpeg`)
-2. Speech-to-text bang Whisper
-3. Dich EN -> VI bang OpenAI hoac MarianMT
-4. Tong hop giong noi tieng Viet (edge-tts, gTTS hoac VietTTS)
-5. Tron audio long tieng vao video goc
-6. Xuat video va file phu de `.srt`
+This project automates the full dubbing process:
+1. Extract audio from video with ffmpeg
+2. Transcribe speech to text with Whisper
+3. Translate EN to VI with OpenAI or MarianMT
+4. Synthesize Vietnamese speech with edge-tts, gTTS, or VietTTS
+5. Compose dubbed audio back into the original video
+6. Export video and SRT subtitles
 
-## Cai dat
+Supported usage modes:
+- Streamlit application for interactive usage
+- CLI for scripted or batch workflows
 
-Yeu cau:
+## Tech Stack
+
 - Python 3.10+
-- ffmpeg va ffprobe co trong PATH
+- ffmpeg, ffprobe
+- openai-whisper
+- transformers + torch
+- edge-tts, gTTS
+- yt-dlp (optional for download workflows)
 
-```bash
-pip install -r requirements.txt
-copy .env.example .env
-```
+## Installation
 
-Neu dung OpenAI, dien `OPENAI_API_KEY` vao `.env`.
+Prerequisites:
+- Python 3.10 or newer
+- ffmpeg and ffprobe available in PATH
 
-## Chay Streamlit app
+Setup:
 
-```bash
-streamlit run app.py
-```
+	pip install -r requirements.txt
+	copy .env.example .env
 
-## Chay bang CLI
+If using OpenAI translation, set OPENAI_API_KEY in .env.
 
-```bash
-python cli.py path/to/video.mp4 --translator marian
-```
+## Run The App
 
-Vi du dung OpenAI:
+Start Streamlit UI:
 
-```bash
-python cli.py path/to/video.mp4 --translator openai --openai-api-key sk-...
-```
+	streamlit run app.py
 
-Vi du chon VietTTS:
+Run from CLI:
 
-```bash
-python cli.py path/to/video.mp4 --tts-engine viettts
-```
+	python cli.py path/to/video.mp4 --translator marian
 
-## Dau ra
+OpenAI translation example:
 
-- Video da long tieng: `data/outputs/*_dubbed.mp4`
-- Phu de: `data/outputs/*_dubbed.srt`
+	python cli.py path/to/video.mp4 --translator openai --openai-api-key sk-...
 
-## Ghi chu
+VietTTS example:
 
-- Whisper/Transformers can tai model lan dau nen se cham hon.
-- MarianMT chay offline, OpenAI cho chat luong dich tot hon.
-- VietTTS la tuy chon optional. Neu chon `--tts-engine viettts` thi can cai thu vien VietTTS phu hop truoc.
+	python cli.py path/to/video.mp4 --tts-engine viettts
+
+## Output Artifacts
+
+- Dubbed video: data/outputs/*_dubbed.mp4
+- Subtitle file: data/outputs/*_dubbed.srt
+
+## Demo Videos
+
+Current repository includes 2 demo videos:
+- [What is Reinforcement Learning- - AI Basics - YouTube.mp4](What%20is%20Reinforcement%20Learning-%20-%20AI%20Basics%20-%20YouTube.mp4)
+- [mariantMT-reinforcementLearning.mp4](mariantMT-reinforcementLearning.mp4)
+
+Inline player block for GitHub-compatible markdown:
+
+	<h3>Demo 1 - Source Video</h3>
+	<video src="What is Reinforcement Learning- - AI Basics - YouTube.mp4" controls width="860"></video>
+
+	<h3>Demo 2 - Dubbed Result (MarianMT)</h3>
+	<video src="mariantMT-reinforcementLearning.mp4" controls width="860"></video>
+
+If inline video is blocked by your platform, keep direct download links only.
+
+## Recommended Repo Hygiene For Demo Videos
+
+- If a video is larger than 100 MB, use Git LFS or attach it in GitHub Releases.
+- Keep filenames stable after publishing links in README.
+- For filenames with spaces, use percent-encoded links (for example, space becomes %20).
+
+## Notes
+
+- First run may be slower because Whisper/Transformers models are downloaded.
+- MarianMT can run offline; OpenAI usually gives better translation quality.
+- VietTTS setup may vary by package variant and environment.
