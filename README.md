@@ -63,26 +63,17 @@ VietTTS example:
 
 ## Demo Videos
 
-Current repository includes 2 demo videos:
-- [What is Reinforcement Learning- - AI Basics - YouTube.mp4](What%20is%20Reinforcement%20Learning-%20-%20AI%20Basics%20-%20YouTube.mp4)
-- [mariantMT-reinforcementLearning.mp4](mariantMT-reinforcementLearning.mp4)
 
-watch demo
 ### Demo 1: Source Video
-<video src="./What%20is%20Reinforcement%20Learning-%20-%20AI%20Basics%20-%20YouTube.mp4" controls width="100%"></video>
+
+https://github.com/user-attachments/assets/458dfa22-e69a-4aa6-b86b-cb6ddb3e952f
+
+
 
 ### Demo 2: Dubbed Video (MarianMT)
-<video src="./mariantMT-reinforcementLearning.mp4" controls width="100%"></video>
 
-Inline player block (works on platforms that allow HTML video in README):
+https://github.com/user-attachments/assets/3c90c685-9d6f-4107-a983-cd66ad8e9376
 
-<h3>Demo 1 - Source Video</h3>
-<video src="./What%20is%20Reinforcement%20Learning-%20-%20AI%20Basics%20-%20YouTube.mp4" controls width="860"></video>
-
-<h3>Demo 2 - Dubbed Result (MarianMT)</h3>
-<video src="./mariantMT-reinforcementLearning.mp4" controls width="860"></video>
-
-If inline video is blocked by your platform, use the watch links above.
 
 ## Recommended Repo Hygiene For Demo Videos
 
