@@ -67,15 +67,19 @@ Current repository includes 2 demo videos:
 - [What is Reinforcement Learning- - AI Basics - YouTube.mp4](What%20is%20Reinforcement%20Learning-%20-%20AI%20Basics%20-%20YouTube.mp4)
 - [mariantMT-reinforcementLearning.mp4](mariantMT-reinforcementLearning.mp4)
 
-Inline player block for GitHub-compatible markdown:
+Click-to-watch links:
+- [Watch Demo 1 (Source)](./What%20is%20Reinforcement%20Learning-%20-%20AI%20Basics%20-%20YouTube.mp4)
+- [Watch Demo 2 (Dubbed MarianMT)](./mariantMT-reinforcementLearning.mp4)
 
-	<h3>Demo 1 - Source Video</h3>
-	<video src="What is Reinforcement Learning- - AI Basics - YouTube.mp4" controls width="860"></video>
+Inline player block (works on platforms that allow HTML video in README):
 
-	<h3>Demo 2 - Dubbed Result (MarianMT)</h3>
-	<video src="mariantMT-reinforcementLearning.mp4" controls width="860"></video>
+<h3>Demo 1 - Source Video</h3>
+<video src="./What is Reinforcement Learning- - AI Basics - YouTube.mp4" controls width="860"></video>
 
-If inline video is blocked by your platform, keep direct download links only.
+<h3>Demo 2 - Dubbed Result (MarianMT)</h3>
+<video src="./mariantMT-reinforcementLearning.mp4" controls width="860"></video>
+
+If inline video is blocked by your platform, use the watch links above.
 
 ## Recommended Repo Hygiene For Demo Videos
 
