@@ -1,0 +1,274 @@
+{% extends "base.html" %}
+{% block title %}Dashboard | AI Video Dubber{% endblock %}
+{% block content %}
+<section class="mb-5">
+  <div class="hero-card p-4 p-lg-5 position-relative overflow-hidden">
+    <!-- Background Icon decoration -->
+    <div class="position-absolute top-0 end-0 p-4 opacity-25 pointer-events-none d-none d-lg-block" style="transform: translate(20%, -20%);">
+      <i class="bi bi-mic-fill text-primary" style="font-size: 15rem; filter: blur(4px);"></i>
+    </div>
+    
+    <div class="row align-items-center g-5 position-relative z-1">
+      <div class="col-lg-7">
+        <div class="d-inline-flex align-items-center gap-2 px-3 py-1 bg-primary bg-opacity-10 text-primary rounded-pill mb-3 border border-primary border-opacity-25 shadow-sm">
+          <span class="spinner-grow spinner-grow-sm text-primary" role="status" style="width: 0.5rem; height: 0.5rem;"></span>
+          <span class="small fw-bold">Hệ thống lồng tiếng AI v2.0</span>
+        </div>
+        <h1 class="display-5 fw-bold mb-3 lh-sm">Biến đổi video với âm thanh AI <span class="text-primary text-gradient">Đa Ngôn Ngữ</span></h1>
+        <p class="mb-0 text-secondary fs-5 lh-base">
+          Tự động nhận diện giọng nói, dịch thuật chính xác và lồng tiếng tự nhiên bằng AI. Tối ưu thời gian và chi phí cho các nhà sáng tạo nội dung.
+        </p>
+      </div>
+      <div class="col-lg-5">
+        <div class="small-stat-grid">
+          <div class="small-stat">
+            <span class="label"><i class="bi bi-robot me-1"></i>Nhận diện</span>
+            <strong>Whisper <small class="text-muted fw-normal">(OpenAI)</small></strong>
+          </div>
+          <div class="small-stat">
+            <span class="label"><i class="bi bi-translate me-1"></i>Dịch thuật</span>
+            <strong>Marian MT / GPT</strong>
+          </div>
+          <div class="small-stat">
+            <span class="label"><i class="bi bi-megaphone me-1"></i>Giọng đọc</span>
+            <strong>Edge / F5-TTS</strong>
+          </div>
+          <div class="small-stat">
+            <span class="label"><i class="bi bi-file-earmark-play me-1"></i>Đầu ra</span>
+            <strong>MP4 + Phụ đề SRT</strong>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="row g-4">
+  <div class="col-12 col-xl-7 d-flex flex-column gap-4">
+    <div class="card border-0 shadow-sm form-card">
+      <div class="card-header bg-transparent border-0 pt-4 px-4 px-lg-5 pb-0">
+        <div class="d-flex align-items-center gap-2 mb-1">
+          <div class="bg-primary bg-opacity-10 p-2 rounded-3 text-primary d-flex align-items-center justify-content-center" style="width: 2.5rem; height: 2.5rem;">
+            <i class="bi bi-sliders2-vertical fs-5"></i>
+          </div>
+          <h2 class="h5 mb-0 fw-bold">Tải lên & Cấu hình</h2>
+        </div>
+        <p class="text-secondary small mt-2 mb-0 ms-1">Tùy chỉnh thông số để có kết quả lồng tiếng tốt nhất cho video của bạn.</p>
+      </div>
+      
+      <div class="card-body p-4 p-lg-5">
+        <form id="uploadForm" class="vstack gap-4">
+          <!-- Video Input -->
+          <div>
+            <label class="file-upload-wrapper w-100 d-block" id="dropzoneLabel" for="video">
+              <i class="bi bi-cloud-arrow-up file-upload-wrapper-icon"></i>
+              <h5 class="mb-1 fw-bold text-body">Kéo thả hoặc chọn video tại đây</h5>
+              <p class="small text-secondary mb-0">Hỗ trợ MP4, MOV, AVI, MKV, WEBM</p>
+              <input type="file" id="video" name="video" accept=".mp4,.mov,.avi,.mkv,.webm" required>
+            </label>
+            <div id="videoPreviewContainer" class="d-none mt-3 position-relative rounded-4 overflow-hidden shadow-sm border border-secondary border-opacity-25 bg-dark">
+              <video id="videoPreview" class="w-100 d-block" controls style="max-height: 250px; background: #000;"></video>
+              <button type="button" id="clearVideoBtn" class="btn btn-sm btn-danger position-absolute top-0 end-0 m-2 rounded-circle shadow" style="width: 32px; height: 32px; padding: 0;" title="Xóa video"><i class="bi bi-x-lg"></i></button>
+            </div>
+          </div>
+
+          <div class="row g-4 pt-2">
+            <!-- Translator Settings -->
+            <div class="col-md-6">
+              <label class="form-label" for="translator_engine"><i class="bi bi-translate me-1 text-primary"></i>Engine Dịch Thuật</label>
+              <select class="form-select form-select-lg" id="translator_engine" name="translator_engine">
+                <option value="marian" selected>MarianMT (Ngoại tuyến)</option>
+                <option value="openai">OpenAI (Trực tuyến)</option>
+              </select>
+            </div>
+            
+            <div class="col-md-6">
+              <label class="form-label" for="openai_model"><i class="bi bi-cpu me-1 text-primary"></i>Mô hình OpenAI</label>
+              <input class="form-control form-control-lg" id="openai_model" name="openai_model" value="{{ default_openai_model }}">
+            </div>
+            
+            <div class="col-12">
+              <label class="form-label" for="openai_api_key"><i class="bi bi-key me-1 text-primary"></i>OpenAI API Key (Tùy chọn)</label>
+              <input class="form-control form-control-lg" type="password" id="openai_api_key" name="openai_api_key" placeholder="{{ 'Đã cấu hình trong hệ thống (.env)' if openai_key_exists else 'sk-...' }}">
+            </div>
+
+            <!-- Whisper Settings -->
+            <div class="col-md-6">
+              <label class="form-label" for="whisper_model"><i class="bi bi-ear-fill me-1 text-primary"></i>Whisper Model</label>
+              <select class="form-select" id="whisper_model" name="whisper_model">
+                <option value="tiny">Tiny (Nhanh nhất)</option>
+                <option value="base" selected>Base (Cân bằng)</option>
+                <option value="small">Small</option>
+                <option value="medium">Medium</option>
+                <option value="large">Large (Chính xác cao)</option>
+              </select>
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label" for="compute_device"><i class="bi bi-gpu-card me-1 text-primary"></i>Phần cứng xử lý</label>
+              <select class="form-select" id="compute_device" name="compute_device">
+                <option value="auto" selected>Auto (Tự động nhận diện)</option>
+                <option value="cuda">CUDA (NVIDIA GPU)</option>
+                <option value="cpu">CPU Only</option>
+              </select>
+            </div>
+
+            <hr class="border-secondary opacity-25 my-2">
+
+            <!-- TTS Settings -->
+            <div class="col-md-6">
+              <label class="form-label" for="tts_engine"><i class="bi bi-megaphone-fill me-1 text-primary"></i>Công cụ đọc (TTS)</label>
+              <select class="form-select" id="tts_engine" name="tts_engine">
+                <option value="edge-tts" selected>Edge TTS (Nhanh, Tự nhiên)</option>
+                <option value="gtts">Google TTS</option>
+                <option value="viettts">VietTTS</option>
+                <option value="f5-tts">F5-TTS (Voice Clone)</option>
+              </select>
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label" for="tts_voice"><i class="bi bi-person-lines-fill me-1 text-primary"></i>Giọng đọc</label>
+              <select class="form-select" id="tts_voice" name="tts_voice">
+                <option value="female" selected>Giọng Nữ</option>
+                <option value="male">Giọng Nam</option>
+              </select>
+            </div>
+
+            <div class="col-12">
+              <label class="form-label" for="subtitle_mode"><i class="bi bi-card-text me-1 text-primary"></i>Chế độ phụ đề xuất ra</label>
+              <select class="form-select" id="subtitle_mode" name="subtitle_mode">
+                <option value="bilingual" selected>Song ngữ (Tiếng Anh + Tiếng Việt)</option>
+                <option value="vi">Chỉ Tiếng Việt</option>
+                <option value="en">Chỉ Tiếng Anh</option>
+                <option value="none">Không thêm phụ đề vào video</option>
+              </select>
+            </div>
+            
+            <div class="col-12">
+              <div class="d-flex justify-content-between align-items-center mb-1">
+                <label class="form-label mb-0" for="original_volume"><i class="bi bi-volume-down-fill me-1 text-primary"></i>Giữ lại âm lượng gốc</label>
+                <span class="badge text-bg-primary rounded-pill"><span id="volumeValue">10</span>%</span>
+              </div>
+              <input type="range" class="form-range" min="0" max="50" step="5" value="10" id="original_volume" name="original_volume">
+            </div>
+          </div>
+
+          <div class="d-grid mt-2">
+            <button class="btn btn-primary btn-lg py-3 fw-bold shadow position-relative overflow-hidden group" id="submitBtn" type="submit">
+              <div class="position-absolute top-0 start-0 w-100 h-100 bg-white opacity-0 group-hover-opacity-25 transition" style="mix-blend-mode: overlay;"></div>
+              <span class="spinner-border spinner-border-sm d-none me-2" id="submitSpinner"></span>
+              <i class="bi bi-play-circle-fill me-2 fs-5 align-middle"></i> Bắt Đầu Lồng Tiếng
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Progress Card -->
+    <div id="progressCard" class="card border-0 shadow-sm d-none">
+      <div class="card-body p-4 p-lg-5">
+        <div class="d-flex align-items-center gap-2 mb-3">
+          <div class="spinner-grow text-primary" style="width: 1.5rem; height: 1.5rem;" role="status"></div>
+          <h3 class="h5 fw-bold mb-0">Hệ thống đang xử lý...</h3>
+        </div>
+        <p class="text-secondary fw-medium mb-3" id="progressText">Đang khởi tạo môi trường...</p>
+        <div class="progress mb-3">
+          <div id="progressBar" class="progress-bar progress-bar-striped progress-bar-animated bg-primary" role="progressbar" style="width: 0%;">0%</div>
+        </div>
+        <div class="alert alert-warning mb-0 border-0 bg-warning bg-opacity-10 text-warning d-flex align-items-start gap-2 rounded-3 p-3">
+          <i class="bi bi-exclamation-triangle-fill mt-1"></i>
+          <small>Vui lòng <strong>không đóng trình duyệt</strong> hoặc tải lại trang trong khi hệ thống đang xử lý video. Quá trình này có thể mất vài phút.</small>
+        </div>
+      </div>
+    </div>
+
+    <!-- Result Card -->
+    <div id="resultCard" class="card border-0 shadow-sm d-none">
+      <div class="card-body p-4 p-lg-5 text-center">
+        <div class="d-inline-flex justify-content-center align-items-center bg-success bg-opacity-10 text-success rounded-circle mb-3" style="width: 4rem; height: 4rem;">
+          <i class="bi bi-check-lg fs-1"></i>
+        </div>
+        <h3 class="h4 fw-bold mb-4">Hoàn thành lồng tiếng!</h3>
+        
+        <div class="ratio ratio-16x9 mb-4 bg-dark rounded-4 overflow-hidden shadow-sm">
+          <video id="resultVideo" class="w-100 h-100" controls></video>
+        </div>
+        
+        <div class="d-flex flex-column flex-sm-row justify-content-center gap-3">
+          <a id="downloadVideo" class="btn btn-success btn-lg px-4" target="_blank">
+            <i class="bi bi-download me-2"></i>Tải Video
+          </a>
+          <a id="downloadSrt" class="btn btn-outline-primary btn-lg px-4 d-none" target="_blank">
+            <i class="bi bi-file-text me-2"></i>Tải Phụ Đề
+          </a>
+        </div>
+        <p class="text-secondary mt-4 mb-0 fw-medium" id="elapsedInfo"></p>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-12 col-xl-5">
+    <div class="card border-0 shadow-sm form-card h-100">
+      <div class="card-header bg-transparent border-0 pt-4 px-4 px-lg-5 pb-0">
+        <div class="d-flex align-items-center gap-2 mb-1">
+          <div class="bg-info bg-opacity-10 p-2 rounded-3 text-info d-flex align-items-center justify-content-center" style="width: 2.5rem; height: 2.5rem;">
+            <i class="bi bi-clock-history fs-5"></i>
+          </div>
+          <h2 class="h5 mb-0 fw-bold">Video Gần Đây</h2>
+        </div>
+        <p class="text-secondary small mt-2 mb-0 ms-1">Kết quả được lưu tự động, bạn có thể xem và tải lại bất cứ lúc nào.</p>
+      </div>
+      
+      <div class="card-body p-4 p-lg-5">
+        {% if outputs %}
+          <div class="vstack gap-3">
+            {% for output in outputs %}
+              <div class="recent-item p-3 d-flex flex-column flex-sm-row align-items-start align-items-sm-center justify-content-between gap-3">
+                <div class="d-flex align-items-center gap-3 overflow-hidden w-100">
+                  <div class="bg-primary bg-opacity-10 text-primary rounded px-2 py-2 fs-4">
+                    <i class="bi bi-film"></i>
+                  </div>
+                  <div class="text-truncate">
+                    <h6 class="fw-bold mb-1 text-truncate" title="{{ output.video_name }}">{{ output.video_name }}</h6>
+                    <small class="text-secondary">Hoàn thành gần đây</small>
+                  </div>
+                </div>
+                <div class="d-flex flex-shrink-0 gap-2 w-100 w-sm-auto">
+                  <a class="btn btn-sm btn-primary flex-grow-1" href="{{ output.video_url }}" target="_blank">
+                    <i class="bi bi-play-fill me-1"></i>Xem
+                  </a>
+                  {% if output.srt_url %}
+                    <a class="btn btn-sm btn-outline-secondary" href="{{ output.srt_url }}" target="_blank" title="Tải phụ đề">
+                      <i class="bi bi-file-text"></i>
+                    </a>
+                  {% endif %}
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+        {% else %}
+          <div class="text-center py-5">
+            <i class="bi bi-inbox text-secondary opacity-50 display-1 mb-3"></i>
+            <h5 class="fw-bold text-body">Chưa có video nào</h5>
+            <p class="text-secondary">Hãy tải lên một video để bắt đầu quá trình lồng tiếng.</p>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Custom quick fix for inline group hover -->
+<style>
+  .group:hover .group-hover-opacity-25 { opacity: 0.25 !important; }
+  .text-gradient {
+    background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .w-sm-auto { width: auto !important; }
+  @media (max-width: 575.98px) {
+    .w-sm-auto { width: 100% !important; }
+  }
+</style>
+{% endblock %}

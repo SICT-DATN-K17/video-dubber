@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}Đăng nhập | AI Video Dubber{% endblock %}
+{% block content %}
+<div class="row justify-content-center align-items-center min-vh-75 mt-5">
+  <div class="col-12 col-md-8 col-lg-5 col-xl-4">
+    <div class="card border-0 shadow-lg form-card position-relative overflow-hidden">
+      <!-- Decoration -->
+      <div class="position-absolute top-0 start-50 translate-middle-x mt-n4 bg-primary bg-opacity-25 rounded-circle" style="width: 15rem; height: 15rem; filter: blur(3rem); z-index: 0;"></div>
+      
+      <div class="card-body p-4 p-md-5 position-relative z-1">
+        <div class="text-center mb-4">
+          <div class="d-inline-flex justify-content-center align-items-center bg-primary bg-opacity-10 text-primary rounded-circle mb-3 border border-primary border-opacity-25" style="width: 4rem; height: 4rem;">
+            <i class="bi bi-person-fill fs-2"></i>
+          </div>
+          <h1 class="h3 fw-bold mb-2">Đăng nhập</h1>
+          <p class="text-secondary small">Quản lý và xử lý video lồng tiếng AI trong một không gian làm việc tập trung.</p>
+        </div>
+        
+        <form method="post" class="vstack gap-4">
+          <div>
+            <label for="username" class="form-label fw-medium"><i class="bi bi-person me-1 text-primary"></i>Tên đăng nhập</label>
+            <input type="text" class="form-control form-control-lg" id="username" name="username" placeholder="Nhập tên đăng nhập..." required autocomplete="username">
+          </div>
+          <div>
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <label for="password" class="form-label fw-medium mb-0"><i class="bi bi-lock me-1 text-primary"></i>Mật khẩu</label>
+            </div>
+            <input type="password" class="form-control form-control-lg" id="password" name="password" placeholder="••••••••" required autocomplete="current-password">
+          </div>
+          
+          <button class="btn btn-primary btn-lg w-100 py-3 fw-bold mt-2 shadow-sm" type="submit">
+            Đăng nhập <i class="bi bi-arrow-right ms-2 align-middle"></i>
+          </button>
+          
+          <div class="text-center mt-3 pt-3 border-top border-secondary border-opacity-25">
+            <span class="text-secondary small">Chưa có tài khoản?</span>
+            <a href="{{ url_for('register') }}" class="text-primary text-decoration-none fw-bold ms-1">Tạo ngay</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

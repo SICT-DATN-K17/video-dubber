@@ -48,3 +48,20 @@ uploads/
 
 # Optional streamlit cache/config
 .streamlit/secrets.toml
+
+# Databases
+*.db
+*.sqlite
+*.sqlite3
+
+# Experimental folders
+server/
+F5-TTS-Vietnamese/
+
+# Root media files (test files)
+/*.mp4
+/*.wav
+/*.avi
+/*.mkv
+/*.webm
+/*.srt

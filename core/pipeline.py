@@ -22,7 +22,9 @@ from utils.file_utils import clean_temp_dir
 
 @dataclass
 class DubbingConfig:
-    """Toàn bộ cấu hình cho một lần chạy pipeline."""
+    """Toàn bộ cấu hình cho một lần chạy pipeline.
+    tts_engine: "edge-tts" | "gtts" | "viettts" | "f5-tts"
+    """
     translator_engine: str = "openai"       # "openai" | "marian"
     openai_api_key: str = ""
     openai_model: str = "gpt-4o"
@@ -30,7 +32,7 @@ class DubbingConfig:
     compute_device: str = "auto"           # "auto" | "cuda" | "cpu"
     sentence_resegment: bool = True
     silence_threshold: float = 0.45         # split by pauses >= threshold (seconds)
-    tts_engine: str = "edge-tts"            # "edge-tts" | "gtts" | "viettts"
+    tts_engine: str = "edge-tts"            # "edge-tts" | "gtts" | "viettts" | "f5-tts"
     tts_voice: str = "female"               # "female" | "male"
     original_volume: float = 0.1            # 0.0 – 1.0
     subtitle_mode: str = "bilingual"        # "bilingual" | "vi" | "en" | "none"
@@ -123,7 +125,11 @@ class DubbingPipeline:
             # ── Bước 4: TTS ────────────────────────────────────────────
             _progress(70, "Tổng hợp giọng nói tiếng Việt...")
             tts = TTSEngine(engine=cfg.tts_engine, voice=cfg.tts_voice)
-            tts_paths = tts.synthesize_all(segments)
+            # Nếu là F5-TTS thì truyền audio gốc vào synthesize_all
+            if cfg.tts_engine in {"f5-tts", "f5_tts", "f5tts"}:
+                tts_paths = tts.synthesize_all(segments, ref_audio_path=audio_path)
+            else:
+                tts_paths = tts.synthesize_all(segments)
             _progress(85, "Tổng hợp giọng xong.")
 
             # ── Bước 5: Ghép video ─────────────────────────────────────

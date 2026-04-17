@@ -25,7 +25,7 @@ for directory in (DATA_DIR, UPLOAD_DIR, OUTPUT_DIR, TEMP_DIR):
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
 OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
 
-MARIAN_MODEL_EN_VI = os.getenv("MARIAN_MODEL_EN_VI", "pNam1802/marian-finetuned-ai-vi")
+MARIAN_MODEL_EN_VI = os.getenv("MARIAN_MODEL_EN_VI", "pNam1802/marian-finetuned-en-vi-datn")
 HF_TOKEN = os.getenv("HF_TOKEN", os.getenv("HUGGINGFACE_TOKEN", "")).strip()
 
 AI_PRESERVE_TERMS = [
