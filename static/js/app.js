@@ -56,6 +56,44 @@
     submitSpinner.classList.toggle("d-none", !isSubmitting);
   }
 
+  // Hiển thị thông báo dạng toast (không chặn UI như alert)
+  function showToast(message, type) {
+    type = type || "danger";
+    let container = document.getElementById("toastContainer");
+    if (!container) {
+      container = document.createElement("div");
+      container.id = "toastContainer";
+      container.className = "toast-container position-fixed top-0 end-0 p-3";
+      container.style.zIndex = "1080";
+      document.body.appendChild(container);
+    }
+    const iconMap = {
+      danger: "bi-exclamation-triangle-fill",
+      warning: "bi-exclamation-circle-fill",
+      success: "bi-check-circle-fill",
+      info: "bi-info-circle-fill",
+    };
+    const wrapper = document.createElement("div");
+    wrapper.className = `toast align-items-center text-bg-${type} border-0 toast-alert`;
+    wrapper.setAttribute("role", "alert");
+    wrapper.innerHTML = `
+      <div class="d-flex">
+        <div class="toast-body">
+          <i class="bi ${iconMap[type] || iconMap.danger} me-2"></i>${message}
+        </div>
+        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+      </div>`;
+    container.appendChild(wrapper);
+    if (typeof bootstrap !== "undefined") {
+      const toast = new bootstrap.Toast(wrapper, { delay: 6000 });
+      toast.show();
+      wrapper.addEventListener("hidden.bs.toast", () => wrapper.remove());
+    } else {
+      wrapper.style.display = "block";
+      setTimeout(() => wrapper.remove(), 6000);
+    }
+  }
+
   function updateProgress(progress, message) {
     const value = Number(progress) || 0;
     progressCard.classList.remove("d-none");
@@ -100,12 +138,12 @@
         if (data.status === "failed") {
           clearInterval(timer);
           setSubmitting(false);
-          alert(data.message || "Xu ly that bai.");
+          showToast(data.message || "Xử lý thất bại.", "danger");
         }
       } catch (err) {
         clearInterval(timer);
         setSubmitting(false);
-        alert(err.message || "Co loi khi theo doi tien trinh.");
+        showToast(err.message || "Có lỗi khi theo dõi tiến trình.", "danger");
       }
     }, 1200);
   }
@@ -179,7 +217,7 @@
       pollProgress(data.job_id);
     } catch (err) {
       setSubmitting(false);
-      alert(err.message || "Khong the tai video len.");
+      showToast(err.message || "Không thể tải video lên.", "danger");
     }
   });
 

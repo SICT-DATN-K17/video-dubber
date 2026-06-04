@@ -63,6 +63,8 @@ class MarianTranslator(BaseTranslator):
         if self.device.type == "cuda":
             # fp16 giúp giảm VRAM đáng kể trên GPU nhỏ.
             model_kwargs["torch_dtype"] = torch.float16
+        # low_cpu_mem_usage=False tránh lỗi "meta tensor" trên một số phiên bản transformers
+        model_kwargs["low_cpu_mem_usage"] = False
         try:
             self.model = MarianMTModel.from_pretrained(model_name, **model_kwargs)
             self.model.to(self.device)
@@ -74,6 +76,7 @@ class MarianTranslator(BaseTranslator):
                 torch.cuda.empty_cache()
             self.device = torch.device("cpu")
             cpu_model_kwargs = {"token": self.hf_token} if self.hf_token else {}
+            cpu_model_kwargs["low_cpu_mem_usage"] = False
             self.model = MarianMTModel.from_pretrained(model_name, **cpu_model_kwargs)
             self.model.to(self.device)
         self.model.eval()
@@ -86,6 +89,7 @@ class MarianTranslator(BaseTranslator):
             torch.cuda.empty_cache()
         self.device = torch.device("cpu")
         cpu_model_kwargs = {"token": self.hf_token} if self.hf_token else {}
+        cpu_model_kwargs["low_cpu_mem_usage"] = False
         self.model = MarianMTModel.from_pretrained(self._model_name, **cpu_model_kwargs)
         self.model.to(self.device)
         self.model.eval()

@@ -17,13 +17,14 @@ from core.translator import get_translator
 from core.tts_engine import TTSEngine
 from core.video_composer import VideoComposer
 from utils.subtitle_utils import segments_to_srt
-from utils.file_utils import clean_temp_dir
+import uuid
+import shutil
 
 
 @dataclass
 class DubbingConfig:
     """Toàn bộ cấu hình cho một lần chạy pipeline.
-    tts_engine: "edge-tts" | "gtts" | "viettts" | "f5-tts"
+    tts_engine: "edge-tts" | "gtts"
     """
     translator_engine: str = "openai"       # "openai" | "marian"
     openai_api_key: str = ""
@@ -32,7 +33,7 @@ class DubbingConfig:
     compute_device: str = "auto"           # "auto" | "cuda" | "cpu"
     sentence_resegment: bool = True
     silence_threshold: float = 0.45         # split by pauses >= threshold (seconds)
-    tts_engine: str = "edge-tts"            # "edge-tts" | "gtts" | "viettts" | "f5-tts"
+    tts_engine: str = "edge-tts"            # "edge-tts" | "gtts"
     tts_voice: str = "female"               # "female" | "male"
     original_volume: float = 0.1            # 0.0 – 1.0
     subtitle_mode: str = "bilingual"        # "bilingual" | "vi" | "en" | "none"
@@ -94,11 +95,14 @@ class DubbingPipeline:
         try:
             video_path = Path(video_path)
             cfg = self.config
+            job_id = uuid.uuid4().hex
+            job_temp_dir = TEMP_DIR / job_id
+            job_temp_dir.mkdir(parents=True, exist_ok=True)
 
             # ── Bước 1: Tách audio ─────────────────────────────────────
             _progress(10, "Tách audio từ video...")
             extractor = AudioExtractor()
-            audio_path = extractor.extract(video_path)
+            audio_path = extractor.extract(video_path, output_path=job_temp_dir / f"{video_path.stem}.wav")
             video_duration = extractor.get_duration(video_path)
 
             # ── Bước 2: Transcribe ─────────────────────────────────────
@@ -112,7 +116,7 @@ class DubbingPipeline:
             _progress(40, f"Tìm thấy {len(segments)} segment.")
 
             # ── Bước 3: Dịch ───────────────────────────────────────────
-            _progress(45, f"Đang dịch với engine: {cfg.translator_engine}...")
+            _progress(45, "Đang dịch...")
             kwargs = {}
             if cfg.translator_engine == "openai":
                 kwargs = {"api_key": cfg.openai_api_key, "model": cfg.openai_model}
@@ -124,12 +128,10 @@ class DubbingPipeline:
 
             # ── Bước 4: TTS ────────────────────────────────────────────
             _progress(70, "Tổng hợp giọng nói tiếng Việt...")
-            tts = TTSEngine(engine=cfg.tts_engine, voice=cfg.tts_voice)
-            # Nếu là F5-TTS thì truyền audio gốc vào synthesize_all
-            if cfg.tts_engine in {"f5-tts", "f5_tts", "f5tts"}:
-                tts_paths = tts.synthesize_all(segments, ref_audio_path=audio_path)
-            else:
-                tts_paths = tts.synthesize_all(segments)
+            tts = TTSEngine(engine=cfg.tts_engine, voice=cfg.tts_voice, tts_dir=job_temp_dir / "tts")
+            tts_results = tts.synthesize_all(segments)
+            tts_segments = [seg for seg, _ in tts_results]
+            tts_paths = [path for _, path in tts_results]
             _progress(85, "Tổng hợp giọng xong.")
 
             # ── Bước 5: Ghép video ─────────────────────────────────────
@@ -137,7 +139,7 @@ class DubbingPipeline:
             composer = VideoComposer()
             output_video = composer.compose(
                 video_path=video_path,
-                segments=segments,
+                segments=tts_segments,
                 tts_paths=tts_paths,
                 original_volume=cfg.original_volume,
                 video_duration=video_duration,
@@ -164,7 +166,8 @@ class DubbingPipeline:
 
         finally:
             result.elapsed_seconds = time.time() - t0
-            # Dọn file tạm
-            clean_temp_dir(TEMP_DIR)
+            # Dọn file tạm riêng của job
+            if 'job_temp_dir' in locals() and job_temp_dir.exists():
+                shutil.rmtree(job_temp_dir, ignore_errors=True)
 
         return result

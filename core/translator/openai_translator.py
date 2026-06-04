@@ -71,19 +71,46 @@ class OpenAITranslator(BaseTranslator):
         return [seg.translated for seg in translated_segments]
 
     def translate_segments_batch(self, segments: List[Segment], batch_size: int = 10) -> List[Segment]:
-        separator = " ||| "
-        
         for i in range(0, len(segments), batch_size):
             batch = segments[i : i + batch_size]
             texts = [seg.text for seg in batch]
-            combined = separator.join(texts)
-            
-            translated_combined = self.translate_text(
-                f"Dịch từng câu sau, phân tách bằng ' ||| ':\n{combined}"
+            numbered = "\n".join(f"{idx+1}. {t}" for idx, t in enumerate(texts))
+
+            response = self.client.chat.completions.create(
+                model=self.model,
+                messages=[
+                    {"role": "system", "content": SYSTEM_PROMPT},
+                    {
+                        "role": "user",
+                        "content": (
+                            f"Dịch {len(texts)} câu sau từ tiếng Anh sang tiếng Việt.\n"
+                            f"Trả về đúng {len(texts)} dòng, mỗi dòng bắt đầu bằng số thứ tự tương ứng "
+                            f"(ví dụ: '1. ...', '2. ...'). Không thêm hoặc bỏ dòng nào.\n\n"
+                            f"{numbered}"
+                        ),
+                    },
+                ],
+                temperature=0.3,
+                max_tokens=1000,
             )
-            
-            parts = [p.strip() for p in translated_combined.split("|||") if p.strip()]
+
+            raw = response.choices[0].message.content.strip()
+            parts: dict[int, str] = {}
+            for line in raw.splitlines():
+                line = line.strip()
+                if not line:
+                    continue
+                # Tìm dòng dạng "1. ..." hoặc "1) ..."
+                for sep in (". ", ") "):
+                    if line[0].isdigit() and sep in line:
+                        idx_str, _, translation = line.partition(sep)
+                        try:
+                            parts[int(idx_str.strip())] = translation.strip()
+                        except ValueError:
+                            pass
+                        break
+
             for j, seg in enumerate(batch):
-                seg.translated = parts[j].strip() if j < len(parts) else seg.text
+                seg.translated = parts.get(j + 1) or seg.text
 
         return segments

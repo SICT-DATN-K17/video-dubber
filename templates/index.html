@@ -1,274 +1,979 @@
 {% extends "base.html" %}
 {% block title %}Dashboard | AI Video Dubber{% endblock %}
-{% block content %}
-<section class="mb-5">
-  <div class="hero-card p-4 p-lg-5 position-relative overflow-hidden">
-    <!-- Background Icon decoration -->
-    <div class="position-absolute top-0 end-0 p-4 opacity-25 pointer-events-none d-none d-lg-block" style="transform: translate(20%, -20%);">
-      <i class="bi bi-mic-fill text-primary" style="font-size: 15rem; filter: blur(4px);"></i>
-    </div>
-    
-    <div class="row align-items-center g-5 position-relative z-1">
-      <div class="col-lg-7">
-        <div class="d-inline-flex align-items-center gap-2 px-3 py-1 bg-primary bg-opacity-10 text-primary rounded-pill mb-3 border border-primary border-opacity-25 shadow-sm">
-          <span class="spinner-grow spinner-grow-sm text-primary" role="status" style="width: 0.5rem; height: 0.5rem;"></span>
-          <span class="small fw-bold">Hệ thống lồng tiếng AI v2.0</span>
-        </div>
-        <h1 class="display-5 fw-bold mb-3 lh-sm">Biến đổi video với âm thanh AI <span class="text-primary text-gradient">Đa Ngôn Ngữ</span></h1>
-        <p class="mb-0 text-secondary fs-5 lh-base">
-          Tự động nhận diện giọng nói, dịch thuật chính xác và lồng tiếng tự nhiên bằng AI. Tối ưu thời gian và chi phí cho các nhà sáng tạo nội dung.
-        </p>
-      </div>
-      <div class="col-lg-5">
-        <div class="small-stat-grid">
-          <div class="small-stat">
-            <span class="label"><i class="bi bi-robot me-1"></i>Nhận diện</span>
-            <strong>Whisper <small class="text-muted fw-normal">(OpenAI)</small></strong>
-          </div>
-          <div class="small-stat">
-            <span class="label"><i class="bi bi-translate me-1"></i>Dịch thuật</span>
-            <strong>Marian MT / GPT</strong>
-          </div>
-          <div class="small-stat">
-            <span class="label"><i class="bi bi-megaphone me-1"></i>Giọng đọc</span>
-            <strong>Edge / F5-TTS</strong>
-          </div>
-          <div class="small-stat">
-            <span class="label"><i class="bi bi-file-earmark-play me-1"></i>Đầu ra</span>
-            <strong>MP4 + Phụ đề SRT</strong>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-</section>
 
-<section class="row g-4">
-  <div class="col-12 col-xl-7 d-flex flex-column gap-4">
-    <div class="card border-0 shadow-sm form-card">
-      <div class="card-header bg-transparent border-0 pt-4 px-4 px-lg-5 pb-0">
-        <div class="d-flex align-items-center gap-2 mb-1">
-          <div class="bg-primary bg-opacity-10 p-2 rounded-3 text-primary d-flex align-items-center justify-content-center" style="width: 2.5rem; height: 2.5rem;">
-            <i class="bi bi-sliders2-vertical fs-5"></i>
-          </div>
-          <h2 class="h5 mb-0 fw-bold">Tải lên & Cấu hình</h2>
-        </div>
-        <p class="text-secondary small mt-2 mb-0 ms-1">Tùy chỉnh thông số để có kết quả lồng tiếng tốt nhất cho video của bạn.</p>
-      </div>
-      
-      <div class="card-body p-4 p-lg-5">
-        <form id="uploadForm" class="vstack gap-4">
-          <!-- Video Input -->
-          <div>
-            <label class="file-upload-wrapper w-100 d-block" id="dropzoneLabel" for="video">
-              <i class="bi bi-cloud-arrow-up file-upload-wrapper-icon"></i>
-              <h5 class="mb-1 fw-bold text-body">Kéo thả hoặc chọn video tại đây</h5>
-              <p class="small text-secondary mb-0">Hỗ trợ MP4, MOV, AVI, MKV, WEBM</p>
-              <input type="file" id="video" name="video" accept=".mp4,.mov,.avi,.mkv,.webm" required>
-            </label>
-            <div id="videoPreviewContainer" class="d-none mt-3 position-relative rounded-4 overflow-hidden shadow-sm border border-secondary border-opacity-25 bg-dark">
-              <video id="videoPreview" class="w-100 d-block" controls style="max-height: 250px; background: #000;"></video>
-              <button type="button" id="clearVideoBtn" class="btn btn-sm btn-danger position-absolute top-0 end-0 m-2 rounded-circle shadow" style="width: 32px; height: 32px; padding: 0;" title="Xóa video"><i class="bi bi-x-lg"></i></button>
-            </div>
-          </div>
-
-          <div class="row g-4 pt-2">
-            <!-- Translator Settings -->
-            <div class="col-md-6">
-              <label class="form-label" for="translator_engine"><i class="bi bi-translate me-1 text-primary"></i>Engine Dịch Thuật</label>
-              <select class="form-select form-select-lg" id="translator_engine" name="translator_engine">
-                <option value="marian" selected>MarianMT (Ngoại tuyến)</option>
-                <option value="openai">OpenAI (Trực tuyến)</option>
-              </select>
-            </div>
-            
-            <div class="col-md-6">
-              <label class="form-label" for="openai_model"><i class="bi bi-cpu me-1 text-primary"></i>Mô hình OpenAI</label>
-              <input class="form-control form-control-lg" id="openai_model" name="openai_model" value="{{ default_openai_model }}">
-            </div>
-            
-            <div class="col-12">
-              <label class="form-label" for="openai_api_key"><i class="bi bi-key me-1 text-primary"></i>OpenAI API Key (Tùy chọn)</label>
-              <input class="form-control form-control-lg" type="password" id="openai_api_key" name="openai_api_key" placeholder="{{ 'Đã cấu hình trong hệ thống (.env)' if openai_key_exists else 'sk-...' }}">
-            </div>
-
-            <!-- Whisper Settings -->
-            <div class="col-md-6">
-              <label class="form-label" for="whisper_model"><i class="bi bi-ear-fill me-1 text-primary"></i>Whisper Model</label>
-              <select class="form-select" id="whisper_model" name="whisper_model">
-                <option value="tiny">Tiny (Nhanh nhất)</option>
-                <option value="base" selected>Base (Cân bằng)</option>
-                <option value="small">Small</option>
-                <option value="medium">Medium</option>
-                <option value="large">Large (Chính xác cao)</option>
-              </select>
-            </div>
-
-            <div class="col-md-6">
-              <label class="form-label" for="compute_device"><i class="bi bi-gpu-card me-1 text-primary"></i>Phần cứng xử lý</label>
-              <select class="form-select" id="compute_device" name="compute_device">
-                <option value="auto" selected>Auto (Tự động nhận diện)</option>
-                <option value="cuda">CUDA (NVIDIA GPU)</option>
-                <option value="cpu">CPU Only</option>
-              </select>
-            </div>
-
-            <hr class="border-secondary opacity-25 my-2">
-
-            <!-- TTS Settings -->
-            <div class="col-md-6">
-              <label class="form-label" for="tts_engine"><i class="bi bi-megaphone-fill me-1 text-primary"></i>Công cụ đọc (TTS)</label>
-              <select class="form-select" id="tts_engine" name="tts_engine">
-                <option value="edge-tts" selected>Edge TTS (Nhanh, Tự nhiên)</option>
-                <option value="gtts">Google TTS</option>
-                <option value="viettts">VietTTS</option>
-                <option value="f5-tts">F5-TTS (Voice Clone)</option>
-              </select>
-            </div>
-
-            <div class="col-md-6">
-              <label class="form-label" for="tts_voice"><i class="bi bi-person-lines-fill me-1 text-primary"></i>Giọng đọc</label>
-              <select class="form-select" id="tts_voice" name="tts_voice">
-                <option value="female" selected>Giọng Nữ</option>
-                <option value="male">Giọng Nam</option>
-              </select>
-            </div>
-
-            <div class="col-12">
-              <label class="form-label" for="subtitle_mode"><i class="bi bi-card-text me-1 text-primary"></i>Chế độ phụ đề xuất ra</label>
-              <select class="form-select" id="subtitle_mode" name="subtitle_mode">
-                <option value="bilingual" selected>Song ngữ (Tiếng Anh + Tiếng Việt)</option>
-                <option value="vi">Chỉ Tiếng Việt</option>
-                <option value="en">Chỉ Tiếng Anh</option>
-                <option value="none">Không thêm phụ đề vào video</option>
-              </select>
-            </div>
-            
-            <div class="col-12">
-              <div class="d-flex justify-content-between align-items-center mb-1">
-                <label class="form-label mb-0" for="original_volume"><i class="bi bi-volume-down-fill me-1 text-primary"></i>Giữ lại âm lượng gốc</label>
-                <span class="badge text-bg-primary rounded-pill"><span id="volumeValue">10</span>%</span>
-              </div>
-              <input type="range" class="form-range" min="0" max="50" step="5" value="10" id="original_volume" name="original_volume">
-            </div>
-          </div>
-
-          <div class="d-grid mt-2">
-            <button class="btn btn-primary btn-lg py-3 fw-bold shadow position-relative overflow-hidden group" id="submitBtn" type="submit">
-              <div class="position-absolute top-0 start-0 w-100 h-100 bg-white opacity-0 group-hover-opacity-25 transition" style="mix-blend-mode: overlay;"></div>
-              <span class="spinner-border spinner-border-sm d-none me-2" id="submitSpinner"></span>
-              <i class="bi bi-play-circle-fill me-2 fs-5 align-middle"></i> Bắt Đầu Lồng Tiếng
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-
-    <!-- Progress Card -->
-    <div id="progressCard" class="card border-0 shadow-sm d-none">
-      <div class="card-body p-4 p-lg-5">
-        <div class="d-flex align-items-center gap-2 mb-3">
-          <div class="spinner-grow text-primary" style="width: 1.5rem; height: 1.5rem;" role="status"></div>
-          <h3 class="h5 fw-bold mb-0">Hệ thống đang xử lý...</h3>
-        </div>
-        <p class="text-secondary fw-medium mb-3" id="progressText">Đang khởi tạo môi trường...</p>
-        <div class="progress mb-3">
-          <div id="progressBar" class="progress-bar progress-bar-striped progress-bar-animated bg-primary" role="progressbar" style="width: 0%;">0%</div>
-        </div>
-        <div class="alert alert-warning mb-0 border-0 bg-warning bg-opacity-10 text-warning d-flex align-items-start gap-2 rounded-3 p-3">
-          <i class="bi bi-exclamation-triangle-fill mt-1"></i>
-          <small>Vui lòng <strong>không đóng trình duyệt</strong> hoặc tải lại trang trong khi hệ thống đang xử lý video. Quá trình này có thể mất vài phút.</small>
-        </div>
-      </div>
-    </div>
-
-    <!-- Result Card -->
-    <div id="resultCard" class="card border-0 shadow-sm d-none">
-      <div class="card-body p-4 p-lg-5 text-center">
-        <div class="d-inline-flex justify-content-center align-items-center bg-success bg-opacity-10 text-success rounded-circle mb-3" style="width: 4rem; height: 4rem;">
-          <i class="bi bi-check-lg fs-1"></i>
-        </div>
-        <h3 class="h4 fw-bold mb-4">Hoàn thành lồng tiếng!</h3>
-        
-        <div class="ratio ratio-16x9 mb-4 bg-dark rounded-4 overflow-hidden shadow-sm">
-          <video id="resultVideo" class="w-100 h-100" controls></video>
-        </div>
-        
-        <div class="d-flex flex-column flex-sm-row justify-content-center gap-3">
-          <a id="downloadVideo" class="btn btn-success btn-lg px-4" target="_blank">
-            <i class="bi bi-download me-2"></i>Tải Video
-          </a>
-          <a id="downloadSrt" class="btn btn-outline-primary btn-lg px-4 d-none" target="_blank">
-            <i class="bi bi-file-text me-2"></i>Tải Phụ Đề
-          </a>
-        </div>
-        <p class="text-secondary mt-4 mb-0 fw-medium" id="elapsedInfo"></p>
-      </div>
-    </div>
-  </div>
-
-  <div class="col-12 col-xl-5">
-    <div class="card border-0 shadow-sm form-card h-100">
-      <div class="card-header bg-transparent border-0 pt-4 px-4 px-lg-5 pb-0">
-        <div class="d-flex align-items-center gap-2 mb-1">
-          <div class="bg-info bg-opacity-10 p-2 rounded-3 text-info d-flex align-items-center justify-content-center" style="width: 2.5rem; height: 2.5rem;">
-            <i class="bi bi-clock-history fs-5"></i>
-          </div>
-          <h2 class="h5 mb-0 fw-bold">Video Gần Đây</h2>
-        </div>
-        <p class="text-secondary small mt-2 mb-0 ms-1">Kết quả được lưu tự động, bạn có thể xem và tải lại bất cứ lúc nào.</p>
-      </div>
-      
-      <div class="card-body p-4 p-lg-5">
-        {% if outputs %}
-          <div class="vstack gap-3">
-            {% for output in outputs %}
-              <div class="recent-item p-3 d-flex flex-column flex-sm-row align-items-start align-items-sm-center justify-content-between gap-3">
-                <div class="d-flex align-items-center gap-3 overflow-hidden w-100">
-                  <div class="bg-primary bg-opacity-10 text-primary rounded px-2 py-2 fs-4">
-                    <i class="bi bi-film"></i>
-                  </div>
-                  <div class="text-truncate">
-                    <h6 class="fw-bold mb-1 text-truncate" title="{{ output.video_name }}">{{ output.video_name }}</h6>
-                    <small class="text-secondary">Hoàn thành gần đây</small>
-                  </div>
-                </div>
-                <div class="d-flex flex-shrink-0 gap-2 w-100 w-sm-auto">
-                  <a class="btn btn-sm btn-primary flex-grow-1" href="{{ output.video_url }}" target="_blank">
-                    <i class="bi bi-play-fill me-1"></i>Xem
-                  </a>
-                  {% if output.srt_url %}
-                    <a class="btn btn-sm btn-outline-secondary" href="{{ output.srt_url }}" target="_blank" title="Tải phụ đề">
-                      <i class="bi bi-file-text"></i>
-                    </a>
-                  {% endif %}
-                </div>
-              </div>
-            {% endfor %}
-          </div>
-        {% else %}
-          <div class="text-center py-5">
-            <i class="bi bi-inbox text-secondary opacity-50 display-1 mb-3"></i>
-            <h5 class="fw-bold text-body">Chưa có video nào</h5>
-            <p class="text-secondary">Hãy tải lên một video để bắt đầu quá trình lồng tiếng.</p>
-          </div>
-        {% endif %}
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- Custom quick fix for inline group hover -->
+{% block head %}
 <style>
-  .group:hover .group-hover-opacity-25 { opacity: 0.25 !important; }
-  .text-gradient {
-    background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
+  /* ── Step indicator ── */
+  .step-list {
+    display: flex;
+    gap: 0;
+    counter-reset: step;
   }
-  .w-sm-auto { width: auto !important; }
-  @media (max-width: 575.98px) {
-    .w-sm-auto { width: 100% !important; }
+
+  .step-item {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    flex: 1;
+    position: relative;
+  }
+
+  .step-item:not(:last-child)::after {
+    content: '';
+    position: absolute;
+    left: calc(1.6rem + 0.6rem);
+    right: 0;
+    top: 50%;
+    height: 1px;
+    background: var(--surface-border);
+    z-index: 0;
+  }
+
+  .step-item.active:not(:last-child)::after,
+  .step-item.done:not(:last-child)::after {
+    background: var(--primary-color);
+    opacity: 0.5;
+  }
+
+  .step-dot {
+    width: 2rem;
+    height: 2rem;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    font-weight: 700;
+    border: 2px solid var(--surface-border);
+    background: transparent;
+    color: var(--text-muted);
+    flex-shrink: 0;
+    position: relative;
+    z-index: 1;
+    transition: var(--transition);
+  }
+
+  .step-item.active .step-dot {
+    border-color: var(--primary-color);
+    background: rgba(59, 130, 246, 0.15);
+    color: var(--primary-color);
+  }
+
+  .step-item.done .step-dot {
+    border-color: #22c55e;
+    background: rgba(34, 197, 94, 0.15);
+    color: #22c55e;
+  }
+
+  .step-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    white-space: nowrap;
+    display: none;
+  }
+
+  @media (min-width: 576px) {
+    .step-label {
+      display: block;
+    }
+  }
+
+  .step-item.active .step-label {
+    color: var(--text-main);
+  }
+
+  .step-item.done .step-label {
+    color: #22c55e;
+  }
+
+  /* ── Upload zone active state ── */
+  .file-upload-wrapper.dragover {
+    border-color: var(--primary-color);
+    background: rgba(59, 130, 246, 0.08);
+  }
+
+  .file-upload-wrapper.dragover .file-upload-wrapper-icon {
+    color: var(--primary-color);
+    transform: translateY(-4px) scale(1.1);
+  }
+
+  /* ── File meta chips ── */
+  .file-meta-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.3rem 0.75rem;
+    border-radius: 2rem;
+    font-size: 0.78rem;
+    font-weight: 600;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid var(--surface-border);
+    color: var(--text-muted);
+  }
+
+  html[data-bs-theme="light"] .file-meta-chip {
+    background: rgba(0, 0, 0, 0.05);
+  }
+
+  .file-meta-chip i {
+    font-size: 0.85rem;
+  }
+
+  /* ── Large-file warning ── */
+  #largeFileWarning {
+    background: rgba(245, 158, 11, 0.1);
+    border: 1px solid rgba(245, 158, 11, 0.3);
+    border-radius: 0.75rem;
+    color: #f59e0b;
+  }
+
+  /* ── Settings panel ── */
+  .settings-panel {
+    background: rgba(255, 255, 255, 0.025);
+    border: 1px solid var(--surface-border);
+    border-radius: 1rem;
+    overflow: hidden;
+  }
+
+  html[data-bs-theme="light"] .settings-panel {
+    background: rgba(0, 0, 0, 0.02);
+  }
+
+  .settings-panel-header {
+    padding: 0.875rem 1.25rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    user-select: none;
+    transition: background 0.2s;
+  }
+
+  .settings-panel-header:hover {
+    background: rgba(255, 255, 255, 0.04);
+  }
+
+  html[data-bs-theme="light"] .settings-panel-header:hover {
+    background: rgba(0, 0, 0, 0.03);
+  }
+
+  .settings-chevron {
+    transition: transform 0.25s ease;
+    color: var(--text-muted);
+  }
+
+  .settings-panel.open .settings-chevron {
+    transform: rotate(180deg);
+  }
+
+  .settings-body {
+    padding: 1.25rem;
+    border-top: 1px solid var(--surface-border);
+  }
+
+  /* ── Gradient primary button ── */
+  .btn-primary-gradient {
+    background: linear-gradient(135deg, #3b82f6 0%, #6366f1 100%);
+    border: none;
+    color: #fff;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    box-shadow: 0 4px 18px -4px rgba(99, 102, 241, 0.55), 0 2px 6px -2px rgba(59, 130, 246, 0.4);
+    transition: var(--transition);
+    border-radius: 0.875rem;
+    padding: 0.85rem 2rem;
+    font-size: 1rem;
+  }
+
+  .btn-primary-gradient:hover:not(:disabled) {
+    background: linear-gradient(135deg, #2563eb 0%, #4f46e5 100%);
+    box-shadow: 0 8px 28px -6px rgba(99, 102, 241, 0.65), 0 4px 10px -3px rgba(59, 130, 246, 0.5);
+    transform: translateY(-2px);
+    color: #fff;
+  }
+
+  .btn-primary-gradient:active:not(:disabled) {
+    transform: translateY(0);
+  }
+
+  .btn-primary-gradient:disabled {
+    opacity: 0.65;
+    cursor: not-allowed;
+  }
+
+  /* ── Skeleton loader ── */
+  .skeleton {
+    border-radius: 0.5rem;
+    background: linear-gradient(90deg,
+        rgba(255, 255, 255, 0.05) 25%,
+        rgba(255, 255, 255, 0.1) 50%,
+        rgba(255, 255, 255, 0.05) 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.6s infinite;
+  }
+
+  html[data-bs-theme="light"] .skeleton {
+    background: linear-gradient(90deg,
+        rgba(0, 0, 0, 0.04) 25%,
+        rgba(0, 0, 0, 0.08) 50%,
+        rgba(0, 0, 0, 0.04) 75%);
+    background-size: 200% 100%;
+  }
+
+  @keyframes shimmer {
+    0% {
+      background-position: 200% 0;
+    }
+
+    100% {
+      background-position: -200% 0;
+    }
+  }
+
+  /* ── Processing card ── */
+  #progressCard {
+    border: 1px solid rgba(59, 130, 246, 0.2);
+    background: rgba(59, 130, 246, 0.05);
+  }
+
+  .processing-skeleton-row {
+    height: 12px;
+    margin-bottom: 0.6rem;
+  }
+
+  .processing-skeleton-row:last-child {
+    width: 60%;
+    margin-bottom: 0;
+  }
+
+  /* ── Result card ── */
+  #resultCard {
+    border: 1px solid rgba(34, 197, 94, 0.25) !important;
+    background: rgba(34, 197, 94, 0.04) !important;
+  }
+
+  .result-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.35rem 0.9rem;
+    border-radius: 2rem;
+    font-size: 0.78rem;
+    font-weight: 700;
+    background: rgba(34, 197, 94, 0.15);
+    color: #22c55e;
+    border: 1px solid rgba(34, 197, 94, 0.3);
+  }
+
+  /* ── Estimated time badge ── */
+  .est-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.3rem 0.8rem;
+    border-radius: 2rem;
+    font-size: 0.78rem;
+    font-weight: 600;
+    background: rgba(139, 92, 246, 0.12);
+    color: #a78bfa;
+    border: 1px solid rgba(139, 92, 246, 0.25);
+  }
+
+  /* ── Recent item: thumbnail placeholder ── */
+  .recent-thumb {
+    width: 44px;
+    height: 44px;
+    border-radius: 0.75rem;
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.25), rgba(139, 92, 246, 0.35));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    color: rgba(255, 255, 255, 0.7);
+  }
+
+  /* ── Pipeline status items ── */
+  .pipeline-status-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.5rem 0.75rem;
+    border-radius: 0.75rem;
+    background: rgba(255, 255, 255, 0.025);
+    border: 1px solid var(--surface-border);
+  }
+
+  html[data-bs-theme="light"] .pipeline-status-item {
+    background: rgba(0, 0, 0, 0.02);
+  }
+
+  .pipeline-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    animation: pulse-dot 2s infinite;
+  }
+
+  .pipeline-online-badge {
+    font-size: .68rem;
+    font-weight: 700;
+    padding: .2rem .6rem;
+    border-radius: 2rem;
+    background: rgba(34, 197, 94, 0.12);
+    color: #22c55e;
+    border: 1px solid rgba(34, 197, 94, 0.25);
+    white-space: nowrap;
+  }
+
+  /* ── Pulse dot ── */
+  @keyframes pulse-dot {
+
+    0%,
+    100% {
+      opacity: 1;
+      transform: scale(1);
+    }
+
+    50% {
+      opacity: 0.5;
+      transform: scale(0.8);
+    }
+  }
+
+  .pulse-dot {
+    animation: pulse-dot 2s infinite;
+  }
+
+  /* ── Step sections ── */
+  .step-section {
+    border-radius: 1rem;
+    padding: 1.5rem;
+    border: 1px solid var(--surface-border);
+    background: rgba(255, 255, 255, 0.015);
+  }
+
+  html[data-bs-theme="light"] .step-section {
+    background: rgba(0, 0, 0, 0.01);
+  }
+
+  .step-section-number {
+    width: 1.75rem;
+    height: 1.75rem;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.72rem;
+    font-weight: 800;
+    background: rgba(59, 130, 246, 0.15);
+    color: var(--primary-color);
+    border: 1.5px solid rgba(59, 130, 246, 0.3);
+    flex-shrink: 0;
   }
 </style>
+{% endblock %}
+
+{% block content %}
+
+<!-- ── Page header ── -->
+<div class="mb-5">
+  <div class="d-flex align-items-center gap-2 mb-2">
+    <span class="pulse-dot"
+      style="width:8px;height:8px;border-radius:50%;background:#22c55e;display:inline-block;"></span>
+    <span class="text-secondary small fw-semibold text-uppercase" style="letter-spacing:.08em;">Pipeline sẵn sàng</span>
+  </div>
+  <h1 class="fw-bold mb-1" style="font-size:clamp(1.6rem,4vw,2.2rem);letter-spacing:-0.03em;">
+    AI Video Dubbing
+  </h1>
+  <p class="text-secondary mb-0" style="max-width:520px;">
+    Upload video — WhisperX, MarianMT và TTS sẽ lo phần còn lại. Từ phiên âm đến giọng nói hoàn chỉnh.
+  </p>
+</div>
+
+<!-- ── Main grid ── -->
+<div class="row g-4 align-items-start">
+
+  <!-- ════════════════ LEFT: 3-step form ════════════════ -->
+  <div class="col-lg-8">
+
+    <!-- Step indicator -->
+    <div class="hero-card px-4 py-3 mb-4">
+      <div class="step-list">
+        <div class="step-item active" id="stepIndicator1">
+          <div class="step-dot"><i class="bi bi-upload" style="font-size:.7rem;"></i></div>
+          <span class="step-label">Upload</span>
+        </div>
+        <div class="step-item" id="stepIndicator2">
+          <div class="step-dot">2</div>
+          <span class="step-label">Cài đặt</span>
+        </div>
+        <div class="step-item" id="stepIndicator3">
+          <div class="step-dot">3</div>
+          <span class="step-label">Xử lý</span>
+        </div>
+      </div>
+    </div>
+
+    <form id="uploadForm" novalidate>
+
+      <!-- ── STEP 1: Upload ── -->
+      <div class="hero-card p-4 p-md-5 mb-4">
+        <div class="d-flex align-items-center gap-3 mb-4">
+          <div class="step-section-number">1</div>
+          <div>
+            <h2 class="h5 fw-bold mb-0">Upload video</h2>
+            <p class="text-secondary small mb-0">Kéo thả hoặc chọn file để bắt đầu.</p>
+          </div>
+        </div>
+
+        <!-- Dropzone -->
+        <div class="file-upload-wrapper mb-3" id="dropzoneLabel">
+          <input type="file" id="video" name="video" accept="video/*" required>
+          <div class="file-upload-wrapper-icon">
+            <i class="bi bi-cloud-arrow-up-fill"></i>
+          </div>
+          <p class="fw-bold mb-1" style="font-size:1.05rem;">Kéo thả video vào đây</p>
+          <p class="text-secondary small mb-3">hoặc click để chọn file từ máy tính</p>
+          <div class="d-flex flex-wrap justify-content-center gap-2">
+            <span class="file-meta-chip"><i class="bi bi-film"></i>MP4 / MOV / MKV</span>
+            <span class="file-meta-chip"><i class="bi bi-webcam"></i>WebM / AVI</span>
+            <span class="file-meta-chip"><i class="bi bi-hdd"></i>Tối đa 2 GB</span>
+          </div>
+        </div>
+
+        <!-- Large-file warning -->
+        <div id="largeFileWarning" class="d-none px-3 py-2 mb-3 d-flex align-items-center gap-2 small fw-semibold">
+          <i class="bi bi-exclamation-triangle-fill"></i>
+          File lớn — thời gian xử lý có thể lâu hơn bình thường.
+        </div>
+
+        <!-- Video preview (shown after file selected) -->
+        <div id="videoPreviewContainer" class="d-none">
+          <div class="position-relative rounded-4 overflow-hidden mb-3" style="background:rgba(0,0,0,0.4);">
+            <video id="videoPreview" class="w-100 d-block" controls
+              style="max-height:300px;border-radius:1rem;"></video>
+            <button type="button" id="clearVideoBtn"
+              class="btn btn-sm btn-danger position-absolute top-0 end-0 m-2 rounded-pill px-3">
+              <i class="bi bi-x-lg"></i>
+            </button>
+          </div>
+
+          <!-- File metadata chips -->
+          <div class="d-flex flex-wrap gap-2 mb-1" id="fileMetaRow">
+            <span class="file-meta-chip" id="metaName"><i class="bi bi-file-earmark-play"></i><span
+                id="metaNameText">—</span></span>
+            <span class="file-meta-chip" id="metaSize"><i class="bi bi-hdd"></i><span id="metaSizeText">—</span></span>
+            <span class="file-meta-chip" id="metaDuration"><i class="bi bi-clock"></i><span
+                id="metaDurationText">—</span></span>
+            <span class="est-badge" id="metaEst"><i class="bi bi-hourglass-split"></i><span id="metaEstText">Ước tính
+                —</span></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── STEP 2: Settings (collapsible) ── -->
+      <div class="mb-4">
+        <div class="settings-panel" id="settingsPanel">
+          <div class="settings-panel-header" id="settingsToggle">
+            <div class="d-flex align-items-center gap-3">
+              <div class="step-section-number">2</div>
+              <div>
+                <p class="fw-bold mb-0 small">Cài đặt nâng cao</p>
+                <p class="text-secondary mb-0" style="font-size:0.75rem;">Tùy chọn — mặc định hoạt động tốt với hầu hết
+                  video.</p>
+              </div>
+            </div>
+            <i class="bi bi-chevron-down settings-chevron"></i>
+          </div>
+
+          <div class="settings-body" id="settingsBody" style="display:none;">
+            <div class="row g-3">
+
+              <!-- Translator -->
+              <div class="col-sm-6 col-lg-4">
+                <label for="translator_engine" class="form-label">
+                  <i class="bi bi-translate me-1 text-primary"></i>Dịch máy
+                </label>
+                <select class="form-select form-select-sm" id="translator_engine" name="translator_engine">
+                  <option value="marian" selected>MarianMT</option>
+                  <option value="openai">MarianMT-v2</option>
+                </select>
+              </div>
+
+              <!-- Whisper -->
+              <div class="col-sm-6 col-lg-4">
+                <label for="whisper_model" class="form-label">
+                  <i class="bi bi-soundwave me-1 text-primary"></i>Mô hình Whisper
+                </label>
+                <select class="form-select form-select-sm" id="whisper_model" name="whisper_model">
+                  <option value="tiny">Tiny — nhanh nhất</option>
+                  <option value="base" selected>Base — cân bằng</option>
+                  <option value="small">Small</option>
+                  <option value="medium">Medium</option>
+                  <option value="large">Large — chính xác nhất</option>
+                </select>
+              </div>
+
+              <!-- TTS Engine -->
+              <div class="col-sm-6 col-lg-4">
+                <label for="tts_engine" class="form-label">
+                  <i class="bi bi-megaphone me-1 text-primary"></i>TTS Engine
+                </label>
+                <select class="form-select form-select-sm" id="tts_engine" name="tts_engine">
+                  <option value="edge-tts" selected>Edge-TTS — mượt mà</option>
+                  <option value="gtts">gTTS — đơn giản</option>
+                </select>
+              </div>
+
+              <!-- Voice -->
+              <div class="col-sm-6 col-lg-4">
+                <label for="tts_voice" class="form-label">
+                  <i class="bi bi-person me-1 text-primary"></i>Giọng đọc
+                </label>
+                <select class="form-select form-select-sm" id="tts_voice" name="tts_voice">
+                  <option value="female" selected>Nữ</option>
+                  <option value="male">Nam</option>
+                </select>
+              </div>
+
+              <!-- Subtitle -->
+              <div class="col-sm-6 col-lg-4">
+                <label for="subtitle_mode" class="form-label">
+                  <i class="bi bi-card-text me-1 text-primary"></i>Phụ đề
+                </label>
+                <select class="form-select form-select-sm" id="subtitle_mode" name="subtitle_mode">
+                  <option value="bilingual" selected>Song ngữ (EN + VI)</option>
+                  <option value="vi">Chỉ tiếng Việt</option>
+                  <option value="en">Chỉ tiếng Anh</option>
+                  <option value="none">Không phụ đề</option>
+                </select>
+              </div>
+
+              <!-- Device -->
+              <div class="col-sm-6 col-lg-4">
+                <label for="compute_device" class="form-label">
+                  <i class="bi bi-cpu me-1 text-primary"></i>Thiết bị xử lý
+                </label>
+                <select class="form-select form-select-sm" id="compute_device" name="compute_device">
+                  <option value="auto" selected>Tự động</option>
+                  <option value="cuda">CUDA (GPU)</option>
+                  <option value="cpu">CPU</option>
+                </select>
+              </div>
+
+              <!-- Volume -->
+              <div class="col-12">
+                <label for="original_volume" class="form-label d-flex align-items-center gap-2">
+                  <i class="bi bi-volume-down text-primary"></i>
+                  Âm lượng gốc
+                  <span class="file-meta-chip py-0 px-2"><span id="volumeValue">10</span>%</span>
+                </label>
+                <input type="range" class="form-range" id="original_volume" name="original_volume" min="0" max="50"
+                  value="10">
+                <div class="d-flex justify-content-between" style="font-size:0.72rem;color:var(--text-muted);">
+                  <span>0 — tắt hoàn toàn</span><span>50 — nghe rõ</span>
+                </div>
+              </div>
+
+              <!-- OpenAI fields -->
+              <div class="col-sm-6" id="openaiModelGroup" style="display:none">
+                <label for="openai_model" class="form-label">
+                  <i class="bi bi-stars me-1 text-primary"></i>
+                </label>
+                <input type="text" class="form-control form-control-sm" id="openai_model" name="openai_model"
+                  value="{{ default_openai_model }}" placeholder="gpt-4o-mini" disabled>
+              </div>
+              <div class="col-sm-6" id="openaiKeyGroup" style="display:none">
+             
+                <input type="password" class="form-control form-control-sm" id="openai_api_key" name="openai_api_key"
+                  placeholder="{% if openai_key_exists %}Dùng key từ server{% else %}sk-...{% endif %}" disabled>
+              </div>
+
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── STEP 3: Start ── -->
+      <div class="hero-card p-4 p-md-5">
+        <div class="d-flex align-items-center gap-3 mb-4">
+          <div class="step-section-number">3</div>
+          <div>
+            <h2 class="h5 fw-bold mb-0">Bắt đầu xử lý</h2>
+            <p class="text-secondary small mb-0">Nhấn khi đã sẵn sàng — pipeline sẽ chạy tự động.</p>
+          </div>
+        </div>
+
+        <div class="d-flex align-items-center gap-3 flex-wrap">
+          <button type="submit" id="submitBtn" class="btn btn-primary-gradient">
+            <span id="submitSpinner" class="spinner-border spinner-border-sm me-2 d-none" role="status"></span>
+            <i class="bi bi-play-fill me-1" id="submitIcon"></i>
+            <span id="submitLabel">Bắt đầu lồng tiếng</span>
+          </button>
+          <p class="text-secondary small mb-0">Upload trước, tinh chỉnh sau.</p>
+        </div>
+
+        <!-- Progress -->
+        <div id="progressCard" class="mt-4 d-none rounded-3 p-4">
+          <!-- Skeleton rows shown while starting -->
+          <div id="progressSkeleton">
+            <div class="skeleton processing-skeleton-row"
+              style="width:40%;height:14px;margin-bottom:.75rem;border-radius:.4rem;"></div>
+            <div class="skeleton processing-skeleton-row"
+              style="width:100%;height:10px;border-radius:2rem;margin-bottom:.6rem;"></div>
+            <div class="skeleton processing-skeleton-row" style="width:60%;height:10px;border-radius:.4rem;"></div>
+          </div>
+          <!-- Real progress (hidden until first tick) -->
+          <div id="progressReal" class="d-none">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <span class="fw-semibold small">Đang xử lý</span>
+              <span class="file-meta-chip py-0 px-2" id="progressPctBadge">0%</span>
+            </div>
+            <div class="progress mb-2" style="height:.6rem;">
+              <div id="progressBar" class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar"
+                style="width:0%;background:linear-gradient(90deg,#3b82f6,#6366f1);">
+              </div>
+            </div>
+            <p id="progressText" class="text-secondary small mb-0">Đang chờ...</p>
+          </div>
+        </div>
+
+        <!-- Result -->
+        <div id="resultCard" class="mt-4 d-none rounded-3 p-4">
+          <div class="d-flex align-items-center gap-3 mb-3">
+            <span class="result-badge"><i class="bi bi-check-lg"></i>Hoàn tất!</span>
+            <p id="elapsedInfo" class="text-secondary small mb-0"></p>
+          </div>
+          <video id="resultVideo" class="w-100 rounded-3 mb-3" controls style="max-height:300px;"></video>
+          <div class="d-flex flex-wrap gap-2">
+            <a id="downloadVideo" href="#" class="btn btn-primary-gradient py-2 px-4" style="font-size:.9rem;">
+              <i class="bi bi-download me-1"></i>Tải video
+            </a>
+            <a id="downloadSrt" href="#" class="btn btn-outline-secondary rounded-3 py-2 px-4 d-none"
+              style="font-size:.9rem;">
+              <i class="bi bi-file-text me-1"></i>Phụ đề SRT
+            </a>
+          </div>
+        </div>
+
+      </div>
+    </form>
+  </div>
+
+  <!-- ════════════════ RIGHT: sidebar ════════════════ -->
+  <div class="col-lg-4">
+
+    <!-- Pipeline status pills -->
+    <div class="hero-card p-4 mb-4">
+      <p class="text-secondary small fw-semibold text-uppercase mb-3" style="letter-spacing:.07em;">
+        <i class="bi bi-cpu me-1"></i>Trạng thái pipeline
+      </p>
+      <div class="vstack gap-2">
+        <div class="pipeline-status-item">
+          <span class="pipeline-dot" style="background:#3b82f6;"></span>
+          <div class="flex-grow-1" style="min-width:0;">
+            <p class="fw-semibold mb-0 small">WhisperX</p>
+            <p class="text-secondary mb-0" style="font-size:.72rem;">Phân đoạn giọng nói</p>
+          </div>
+          <span class="pipeline-online-badge">Online</span>
+        </div>
+        <div class="pipeline-status-item">
+          <span class="pipeline-dot" style="background:#8b5cf6;"></span>
+          <div class="flex-grow-1" style="min-width:0;">
+            <p class="fw-semibold mb-0 small">MarianMT</p>
+            <p class="text-secondary mb-0" style="font-size:.72rem;">Dịch ngôn ngữ</p>
+          </div>
+          <span class="pipeline-online-badge">Online</span>
+        </div>
+        <div class="pipeline-status-item">
+          <span class="pipeline-dot" style="background:#06b6d4;"></span>
+          <div class="flex-grow-1" style="min-width:0;">
+            <p class="fw-semibold mb-0 small">TTS</p>
+            <p class="text-secondary mb-0" style="font-size:.72rem;">Tổng hợp giọng</p>
+          </div>
+          <span class="pipeline-online-badge">Online</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Recent outputs -->
+    <div class="hero-card p-4">
+      <div class="d-flex align-items-center justify-content-between mb-3">
+        <p class="text-secondary small fw-semibold text-uppercase mb-0" style="letter-spacing:.07em;">
+          <i class="bi bi-clock-history me-1"></i>Gần đây
+        </p>
+        {% if outputs %}
+        <span class="file-meta-chip py-0 px-2">{{ outputs|length }} video</span>
+        {% endif %}
+      </div>
+
+      {% if outputs %}
+      <div class="vstack gap-2">
+        {% for item in outputs %}
+        <div class="recent-item p-3">
+          <div class="d-flex align-items-center gap-3">
+            <div class="recent-thumb">
+              <i class="bi bi-play-fill" style="font-size:.9rem;"></i>
+            </div>
+            <div class="flex-grow-1" style="min-width:0;">
+              <p class="fw-semibold small mb-2 text-truncate" title="{{ item.video_name }}">
+                {{ item.video_name }}
+              </p>
+              <div class="d-flex gap-1 flex-wrap">
+                <a href="{{ item.video_url }}" target="_blank" class="btn btn-outline-primary rounded-pill py-0 px-2"
+                  style="font-size:.7rem;">
+                  <i class="bi bi-play-fill"></i> Xem
+                </a>
+                <a href="{{ item.video_url }}" download="{{ item.video_name }}"
+                  class="btn btn-outline-secondary rounded-pill py-0 px-2" style="font-size:.7rem;">
+                  <i class="bi bi-download"></i> Tải
+                </a>
+                {% if item.srt_url %}
+                <a href="{{ item.srt_url }}" download="{{ item.srt_name }}"
+                  class="btn btn-outline-secondary rounded-pill py-0 px-2" style="font-size:.7rem;">
+                  <i class="bi bi-file-text"></i> SRT
+                </a>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="text-center py-4 text-secondary">
+        <i class="bi bi-inbox d-block mb-2 opacity-40" style="font-size:2.2rem;"></i>
+        <p class="small mb-0">Chưa có video nào.<br>Upload để bắt đầu.</p>
+      </div>
+      {% endif %}
+    </div>
+
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+  (function () {
+    /* ── Settings panel toggle ── */
+    const settingsPanel = document.getElementById('settingsPanel');
+    const settingsToggle = document.getElementById('settingsToggle');
+    const settingsBody = document.getElementById('settingsBody');
+
+    settingsToggle.addEventListener('click', () => {
+      const open = settingsPanel.classList.toggle('open');
+      settingsBody.style.display = open ? 'block' : 'none';
+      // Advance step indicator to step 2 when user opens settings
+      if (open) setStep(2);
+    });
+
+    /* ── Step indicator ── */
+    function setStep(n) {
+      [1, 2, 3].forEach(i => {
+        const el = document.getElementById('stepIndicator' + i);
+        el.classList.remove('active', 'done');
+        if (i < n) el.classList.add('done');
+        if (i === n) el.classList.add('active');
+      });
+    }
+
+    /* ── Drag-and-drop on dropzone ── */
+    const dropzone = document.getElementById('dropzoneLabel');
+    dropzone.addEventListener('dragover', e => { e.preventDefault(); dropzone.classList.add('dragover'); });
+    dropzone.addEventListener('dragleave', () => dropzone.classList.remove('dragover'));
+    dropzone.addEventListener('drop', e => {
+      e.preventDefault();
+      dropzone.classList.remove('dragover');
+      const file = e.dataTransfer.files[0];
+      if (file) setFile(file);
+    });
+
+    /* ── File selection ── */
+    const videoInput = document.getElementById('video');
+    const videoPreviewContainer = document.getElementById('videoPreviewContainer');
+    const videoPreview = document.getElementById('videoPreview');
+    const clearVideoBtn = document.getElementById('clearVideoBtn');
+    const largeFileWarning = document.getElementById('largeFileWarning');
+    const metaNameText = document.getElementById('metaNameText');
+    const metaSizeText = document.getElementById('metaSizeText');
+    const metaDurationText = document.getElementById('metaDurationText');
+    const metaEstText = document.getElementById('metaEstText');
+
+    function fmtSize(bytes) {
+      if (bytes >= 1073741824) return (bytes / 1073741824).toFixed(1) + ' GB';
+      return (bytes / 1048576).toFixed(0) + ' MB';
+    }
+    function fmtDuration(s) {
+      if (!s || !isFinite(s)) return '—';
+      const m = Math.floor(s / 60), sec = Math.floor(s % 60);
+      return m + ':' + String(sec).padStart(2, '0');
+    }
+    function estimateMinutes(bytes, duration) {
+      // rough heuristic: ~1 min processing per 150 MB or per 5 min of video
+      const byBytes = bytes / (150 * 1048576);
+      const bySecs = duration > 0 ? duration / 300 : 0;
+      return Math.max(1, Math.ceil(Math.max(byBytes, bySecs)));
+    }
+
+    function setFile(file) {
+      // Sync to hidden input via DataTransfer
+      const dt = new DataTransfer();
+      dt.items.add(file);
+      videoInput.files = dt.files;
+
+      const url = URL.createObjectURL(file);
+      videoPreview.src = url;
+      videoPreviewContainer.classList.remove('d-none');
+      dropzone.classList.add('d-none');
+
+      metaNameText.textContent = file.name.length > 28 ? file.name.slice(0, 26) + '…' : file.name;
+      metaSizeText.textContent = fmtSize(file.size);
+      largeFileWarning.classList.toggle('d-none', file.size < 1.2 * 1073741824);
+
+      videoPreview.onloadedmetadata = () => {
+        const dur = videoPreview.duration;
+        metaDurationText.textContent = fmtDuration(dur);
+        const est = estimateMinutes(file.size, dur);
+        metaEstText.textContent = 'Ước tính ~' + est + ' phút';
+      };
+
+      setStep(2);
+    }
+
+    videoInput.addEventListener('change', function () {
+      if (this.files[0]) setFile(this.files[0]);
+      else clearFile();
+    });
+
+    function clearFile() {
+      videoInput.value = '';
+      videoPreview.src = '';
+      videoPreviewContainer.classList.add('d-none');
+      dropzone.classList.remove('d-none');
+      largeFileWarning.classList.add('d-none');
+      setStep(1);
+    }
+    clearVideoBtn.addEventListener('click', clearFile);
+
+    /* ── Volume display ── */
+    document.getElementById('original_volume').addEventListener('input', function () {
+      document.getElementById('volumeValue').textContent = this.value;
+    });
+
+    /* ── OpenAI fields toggle ── */
+    const translatorEngine = document.getElementById('translator_engine');
+    const openaiModel = document.getElementById('openai_model');
+    const openaiApiKey = document.getElementById('openai_api_key');
+
+    function syncTranslatorFields() {
+      const on = translatorEngine.value === 'openai';
+      openaiModel.disabled = !on;
+      openaiApiKey.disabled = !on;
+      openaiModel.classList.toggle('opacity-50', !on);
+      openaiApiKey.classList.toggle('opacity-50', !on);
+    }
+    translatorEngine.addEventListener('change', syncTranslatorFields);
+    syncTranslatorFields();
+
+    /* ── Form submit & polling ── */
+    const submitBtn = document.getElementById('submitBtn');
+    const submitSpinner = document.getElementById('submitSpinner');
+    const submitIcon = document.getElementById('submitIcon');
+    const submitLabel = document.getElementById('submitLabel');
+    const progressCard = document.getElementById('progressCard');
+    const progressSkel = document.getElementById('progressSkeleton');
+    const progressReal = document.getElementById('progressReal');
+    const progressBar = document.getElementById('progressBar');
+    const progressText = document.getElementById('progressText');
+    const progressPctBadge = document.getElementById('progressPctBadge');
+    const resultCard = document.getElementById('resultCard');
+    const resultVideo = document.getElementById('resultVideo');
+    const downloadVideo = document.getElementById('downloadVideo');
+    const downloadSrt = document.getElementById('downloadSrt');
+    const elapsedInfo = document.getElementById('elapsedInfo');
+
+    function setSubmitting(on) {
+      submitBtn.disabled = on;
+      submitSpinner.classList.toggle('d-none', !on);
+      submitIcon.classList.toggle('d-none', on);
+      submitLabel.textContent = on ? 'Đang xử lý…' : 'Bắt đầu lồng tiếng';
+    }
+
+    function updateProgress(pct, message) {
+      const v = Number(pct) || 0;
+      progressCard.classList.remove('d-none');
+      if (v > 1) {
+        progressSkel.classList.add('d-none');
+        progressReal.classList.remove('d-none');
+      }
+      progressBar.style.width = v + '%';
+      progressPctBadge.textContent = v + '%';
+      progressText.textContent = message || 'Đang xử lý...';
+    }
+
+    function showResult(result) {
+      if (!result || !result.video_url) return;
+      setStep(3);
+      resultCard.classList.remove('d-none');
+      resultVideo.src = result.video_url;
+      resultVideo.load();
+      downloadVideo.href = result.video_url;
+      downloadVideo.download = result.video_name || 'output.mp4';
+      if (result.srt_url) {
+        downloadSrt.classList.remove('d-none');
+        downloadSrt.href = result.srt_url;
+        downloadSrt.download = result.srt_name || 'subtitle.srt';
+      } else {
+        downloadSrt.classList.add('d-none');
+      }
+      elapsedInfo.textContent = 'Thời gian xử lý: ' + (result.elapsed_seconds || 0) + 's';
+    }
+
+    function pollProgress(jobId) {
+      const timer = setInterval(async () => {
+        try {
+          const res = await fetch('/api/progress/' + jobId);
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.error || 'Không lấy được tiến trình.');
+          updateProgress(data.progress, data.message);
+          if (data.status === 'done') {
+            clearInterval(timer);
+            setSubmitting(false);
+            showResult(data.result);
+          }
+          if (data.status === 'failed') {
+            clearInterval(timer);
+            setSubmitting(false);
+            alert(data.message || 'Xử lý thất bại.');
+          }
+        } catch (err) {
+          clearInterval(timer);
+          setSubmitting(false);
+          alert(err.message || 'Có lỗi khi theo dõi tiến trình.');
+        }
+      }, 1200);
+    }
+
+    document.getElementById('uploadForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      setSubmitting(true);
+      resultCard.classList.add('d-none');
+      progressSkel.classList.remove('d-none');
+      progressReal.classList.add('d-none');
+      updateProgress(1, 'Đang gửi video...');
+      try {
+        const res = await fetch('/api/upload', { method: 'POST', body: new FormData(e.target) });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Upload thất bại.');
+        pollProgress(data.job_id);
+      } catch (err) {
+        setSubmitting(false);
+        alert(err.message || 'Không thể tải video lên.');
+      }
+    });
+  })();
+</script>
 {% endblock %}

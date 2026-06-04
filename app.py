@@ -37,7 +37,7 @@ ALLOWED_VIDEO_EXTENSIONS = {".mp4", ".mov", ".avi", ".mkv", ".webm"}
 ALLOWED_TRANSLATORS = {"openai", "marian"}
 ALLOWED_WHISPER_MODELS = {"tiny", "base", "small", "medium", "large"}
 ALLOWED_DEVICES = {"auto", "cuda", "cpu"}
-ALLOWED_TTS_ENGINES = {"edge-tts", "gtts", "viettts", "f5-tts"}
+ALLOWED_TTS_ENGINES = {"edge-tts", "gtts"}
 ALLOWED_VOICES = {"female", "male"}
 ALLOWED_SUBTITLE_MODES = {"bilingual", "vi", "en", "none"}
 
@@ -80,7 +80,7 @@ with app.app_context():
 
 @login_manager.user_loader
 def load_user(user_id):
-    return User.query.get(int(user_id))
+    return db.session.get(User, int(user_id))
 
 # --- Helpers ---
 def _update_job(job_id: str, **kwargs: Any) -> None:
