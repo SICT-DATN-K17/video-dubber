@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html class="dark" lang="vi">
+
+<head>
+  <meta charset="utf-8">
+  <meta content="width=device-width, initial-scale=1.0" name="viewport">
+  <title>{% block title %}Video Dubber{% endblock %}</title>
+  {% include '_head.html' %}
+</head>
+
+<body
+  class="bg-background text-on-surface min-h-screen flex items-center justify-center font-body-md selection:bg-primary-container selection:text-on-primary">
+
+  <div class="w-full max-w-[1280px] min-h-screen md:min-h-[720px] flex flex-col md:flex-row border border-outline-variant bg-surface-container-low mx-auto md:my-8">
+
+    {# ── Trái: giới thiệu sản phẩm ─────────────────────────── #}
+    <div class="w-full md:w-1/2 p-xl flex flex-col justify-between border-b md:border-b-0 md:border-r border-outline-variant relative overflow-hidden bg-background">
+      <div class="absolute top-0 right-0 w-64 h-64 bg-primary-container/5 rounded-bl-full pointer-events-none"></div>
+
+      <div class="relative z-10">
+        <div class="text-headline-xl font-headline-xl text-primary tracking-tighter mb-xl">DUB_STUDIO</div>
+        <h1 class="text-headline-lg font-headline-lg mb-lg max-w-sm">Lồng tiếng Việt cho video bài giảng</h1>
+        <ul class="space-y-md text-body-lg font-body-lg text-on-surface-variant">
+          {% for icon, text in [
+            ('mic', 'Nhận dạng giọng nói bằng Whisper'),
+            ('translate', 'Dịch chuyên ngành AI, ML'),
+            ('bolt', 'Giọng đọc tiếng Việt tự nhiên')
+          ] %}
+          <li class="flex items-center gap-sm">
+            <span class="material-symbols-outlined text-primary">{{ icon }}</span>{{ text }}
+          </li>
+          {% endfor %}
+        </ul>
+      </div>
+
+      <div class="relative z-10 mt-xl">
+        <div class="inline-flex items-center gap-sm bg-surface-container-high px-md py-sm border border-outline-variant">
+          <span class="material-symbols-outlined text-primary text-[18px]">speed</span>
+          <span class="text-label-sm font-label-sm uppercase tracking-wider text-on-surface">
+            Video 86 giây → xong trong 23 giây
+          </span>
+        </div>
+      </div>
+    </div>
+
+    {# ── Phải: biểu mẫu ────────────────────────────────────── #}
+    <div class="w-full md:w-1/2 p-xl flex flex-col justify-center bg-surface-container-low">
+      <div class="max-w-md w-full mx-auto">
+
+        <div class="flex border-b border-outline-variant mb-xl">
+          {% for endpoint, label in [('auth.login', 'Đăng nhập'), ('auth.register', 'Đăng ký')] %}
+          <a href="{{ url_for(endpoint) }}"
+            class="w-1/2 pb-sm text-headline-md font-headline-md text-left border-b-2 transition-colors
+                   {% if request.endpoint == endpoint %}text-primary border-primary{% else %}text-on-surface-variant hover:text-on-surface border-transparent{% endif %}">
+            {{ label }}
+          </a>
+          {% endfor %}
+        </div>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        <div class="flex flex-col gap-2 mb-lg">
+          {% for category, message in messages %}
+          <div class="border-l-4 p-md flex items-start gap-md font-body-md text-body-md
+            {% if category == 'danger' %}bg-error-container/30 border-error text-error
+            {% elif category == 'success' %}bg-primary/10 border-primary text-primary
+            {% else %}bg-surface-container border-outline text-on-surface-variant{% endif %}">
+            <span class="material-symbols-outlined text-[20px]">
+              {% if category == 'danger' %}error{% elif category == 'success' %}check_circle{% else %}info{% endif %}
+            </span>
+            <span>{{ message }}</span>
+          </div>
+          {% endfor %}
+        </div>
+        {% endif %}
+        {% endwith %}
+
+        {% block form %}{% endblock %}
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Nút hiện/ẩn mật khẩu — dùng chung cho cả hai trang.
+    document.querySelectorAll("[data-toggle-password]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        const input = document.getElementById(btn.dataset.togglePassword);
+        const shown = input.type === "text";
+        input.type = shown ? "password" : "text";
+        btn.querySelector("span").textContent = shown ? "visibility_off" : "visibility";
+      });
+    });
+
+    // Chặn gửi hai lần và cho biết đang xử lý.
+    document.querySelectorAll("form[data-busy-label]").forEach(function (form) {
+      form.addEventListener("submit", function () {
+        const btn = form.querySelector("button[type=submit]");
+        if (!btn) return;
+        btn.disabled = true;
+        btn.classList.add("opacity-60");
+        btn.textContent = form.dataset.busyLabel;
+      });
+    });
+  </script>
+</body>
+
+</html>

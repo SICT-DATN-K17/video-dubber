@@ -1,45 +1,104 @@
-{% extends "base.html" %}
-{% block title %}Đăng ký | AI Video Dubber{% endblock %}
-{% block content %}
-<div class="row justify-content-center align-items-center min-vh-75 mt-5">
-  <div class="col-12 col-md-8 col-lg-5 col-xl-4">
-    <div class="card border-0 shadow-lg form-card position-relative overflow-hidden">
-      <!-- Decoration -->
-      <div class="position-absolute top-0 start-50 translate-middle-x mt-n4 bg-success bg-opacity-25 rounded-circle" style="width: 15rem; height: 15rem; filter: blur(3rem); z-index: 0;"></div>
-      
-      <div class="card-body p-4 p-md-5 position-relative z-1">
-        <div class="text-center mb-4">
-          <div class="d-inline-flex justify-content-center align-items-center bg-success bg-opacity-10 text-success rounded-circle mb-3 border border-success border-opacity-25" style="width: 4rem; height: 4rem;">
-            <i class="bi bi-person-plus-fill fs-2"></i>
-          </div>
-          <h1 class="h3 fw-bold mb-2">Tạo tài khoản</h1>
-          <p class="text-secondary small">Đăng ký để sử dụng đầy đủ các tính năng lồng tiếng AI của hệ thống.</p>
-        </div>
-        
-        <form method="post" class="vstack gap-4">
-          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-          <div>
-            <label for="username" class="form-label fw-medium"><i class="bi bi-person me-1 text-success"></i>Tên đăng nhập mới</label>
-            <input type="text" class="form-control form-control-lg" id="username" name="username" placeholder="Nhập tên đăng nhập..." required autocomplete="username">
-          </div>
-          <div>
-            <div class="d-flex justify-content-between align-items-center mb-2">
-              <label for="password" class="form-label fw-medium mb-0"><i class="bi bi-lock me-1 text-success"></i>Mật khẩu</label>
-            </div>
-            <input type="password" class="form-control form-control-lg" id="password" name="password" placeholder="••••••••" required autocomplete="new-password">
-          </div>
-          
-          <button class="btn btn-success btn-lg w-100 py-3 fw-bold mt-2 shadow-sm" type="submit">
-            Đăng ký tài khoản <i class="bi bi-arrow-right ms-2 align-middle"></i>
-          </button>
-          
-          <div class="text-center mt-3 pt-3 border-top border-secondary border-opacity-25">
-            <span class="text-secondary small">Đã có tài khoản?</span>
-            <a href="{{ url_for('auth.login') }}" class="text-success text-decoration-none fw-bold ms-1">Đăng nhập</a>
-          </div>
-        </form>
-      </div>
-    </div>
+{% extends "auth_layout.html" %}
+{% block title %}Đăng ký · DUB_STUDIO{% endblock %}
+
+{% block form %}
+<form method="post" class="space-y-lg" data-busy-label="Đang tạo tài khoản..." id="registerForm">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+  <div class="space-y-xs">
+    <label class="block text-label-sm font-label-sm uppercase text-on-surface-variant" for="username">
+      Tên đăng nhập
+    </label>
+    <input id="username" name="username" type="text" required autofocus autocomplete="username" minlength="3"
+      placeholder="Chọn một tên đăng nhập"
+      class="w-full bg-background border border-outline-variant px-md py-sm text-body-md font-body-md text-on-surface placeholder-outline rounded-none focus:border-primary-container focus:outline-none transition-colors">
   </div>
-</div>
+
+  <div class="space-y-xs">
+    <label class="block text-label-sm font-label-sm uppercase text-on-surface-variant" for="password">
+      Mật khẩu
+    </label>
+    <div class="relative">
+      <input id="password" name="password" type="password" required autocomplete="new-password" minlength="8"
+        placeholder="Tối thiểu 8 ký tự"
+        class="w-full bg-background border border-outline-variant px-md py-sm pr-12 text-body-md font-body-md text-on-surface placeholder-outline rounded-none focus:border-primary-container focus:outline-none transition-colors">
+      <button type="button" data-toggle-password="password" aria-label="Hiện hoặc ẩn mật khẩu"
+        class="absolute right-sm top-1/2 -translate-y-1/2 text-on-surface-variant hover:text-on-surface">
+        <span class="material-symbols-outlined">visibility_off</span>
+      </button>
+    </div>
+
+    <div class="flex gap-1 pt-1">
+      {% for i in range(3) %}
+      <div class="strength-bar h-1 flex-1 bg-surface-container-high transition-colors"></div>
+      {% endfor %}
+    </div>
+    <p id="strengthText" class="text-label-sm font-label-sm text-on-surface-variant">Tối thiểu 8 ký tự</p>
+  </div>
+
+  <div class="space-y-xs">
+    <label class="block text-label-sm font-label-sm uppercase text-on-surface-variant" for="passwordConfirm">
+      Nhập lại mật khẩu
+    </label>
+    <input id="passwordConfirm" type="password" required autocomplete="new-password" placeholder="Nhập lại mật khẩu"
+      class="w-full bg-background border border-outline-variant px-md py-sm text-body-md font-body-md text-on-surface placeholder-outline rounded-none focus:border-primary-container focus:outline-none transition-colors">
+    <p id="matchText" class="hidden text-label-sm font-label-sm text-error">Hai mật khẩu chưa khớp.</p>
+  </div>
+
+  <button type="submit"
+    class="w-full bg-primary-container text-on-primary-container text-body-lg font-headline-md font-bold py-md mt-md hover:bg-primary transition-colors rounded-none border border-transparent">
+    Tạo tài khoản
+  </button>
+
+  <p class="text-center text-body-md font-body-md text-on-surface-variant">
+    Đã có tài khoản?
+    <a href="{{ url_for('auth.login') }}" class="text-primary hover:underline">Đăng nhập</a>
+  </p>
+</form>
+
+<script>
+  (function () {
+    const form = document.getElementById("registerForm");
+    const password = document.getElementById("password");
+    const confirm = document.getElementById("passwordConfirm");
+    const bars = document.querySelectorAll(".strength-bar");
+    const strengthText = document.getElementById("strengthText");
+    const matchText = document.getElementById("matchText");
+
+    const LEVELS = [
+      ["Quá ngắn — tối thiểu 8 ký tự", "bg-error"],
+      ["Tạm được", "bg-tertiary"],
+      ["Mạnh", "bg-primary"]
+    ];
+
+    function score(value) {
+      if (value.length < 8) return 0;
+      let variety = 0;
+      if (/[a-z]/.test(value) && /[A-Z]/.test(value)) variety++;
+      if (/\d/.test(value)) variety++;
+      if (/[^\w\s]/.test(value)) variety++;
+      return value.length >= 12 && variety >= 2 ? 2 : 1;
+    }
+
+    password.addEventListener("input", function () {
+      const level = score(password.value);
+      const [text, colour] = LEVELS[level];
+      bars.forEach(function (bar, i) {
+        bar.className = "strength-bar h-1 flex-1 transition-colors " +
+          (password.value && i <= level ? colour : "bg-surface-container-high");
+      });
+      strengthText.textContent = password.value ? text : "Tối thiểu 8 ký tự";
+    });
+
+    // Chặn ở client cho nhanh; backend vẫn là nơi kiểm tra thật.
+    form.addEventListener("submit", function (e) {
+      if (password.value !== confirm.value) {
+        e.preventDefault();
+        matchText.classList.remove("hidden");
+        confirm.focus();
+      }
+    });
+    confirm.addEventListener("input", function () { matchText.classList.add("hidden"); });
+  })();
+</script>
 {% endblock %}
