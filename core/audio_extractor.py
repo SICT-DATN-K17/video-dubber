@@ -1,9 +1,15 @@
 from __future__ import annotations
 
-import subprocess
 from pathlib import Path
 
-from config.settings import FFPROBE_BIN, FFMPEG_BIN, TEMP_DIR
+from config.settings import (
+	FFMPEG_BIN,
+	FFMPEG_TIMEOUT,
+	FFPROBE_BIN,
+	FFPROBE_TIMEOUT,
+	TEMP_DIR,
+)
+from utils.proc import run_command
 
 
 class AudioExtractor:
@@ -33,7 +39,11 @@ class AudioExtractor:
 			"pcm_s16le",
 			str(output_path),
 		]
-		self._run(cmd, "Cannot extract audio. Check ffmpeg installation.")
+		run_command(
+			cmd,
+			timeout=FFMPEG_TIMEOUT,
+			error_message="Cannot extract audio. Check ffmpeg installation.",
+		)
 		return output_path
 
 	def get_duration(self, media_path: str | Path) -> float:
@@ -48,15 +58,11 @@ class AudioExtractor:
 			"default=noprint_wrappers=1:nokey=1",
 			str(media_path),
 		]
-		completed = self._run(cmd, "Cannot read media duration. Check ffprobe installation.")
+		completed = run_command(
+			cmd,
+			timeout=FFPROBE_TIMEOUT,
+			error_message="Cannot read media duration. Check ffprobe installation.",
+		)
 		return float(completed.stdout.strip() or 0)
 
-	@staticmethod
-	def _run(cmd: list[str], error_message: str) -> subprocess.CompletedProcess:
-		try:
-			return subprocess.run(cmd, capture_output=True, text=True, check=True)
-		except FileNotFoundError as exc:
-			raise RuntimeError(error_message) from exc
-		except subprocess.CalledProcessError as exc:
-			raise RuntimeError(f"{error_message}\n{exc.stderr.strip()}") from exc
 

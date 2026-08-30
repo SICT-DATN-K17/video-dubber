@@ -13,6 +13,7 @@ from core.translator.base import BaseTranslator
 from core.translator.llm_common import (
     SYSTEM_PROMPT,
     build_batch_prompt,
+    call_with_retry,
     parse_numbered_lines,
 )
 from core.transcriber import Segment
@@ -37,14 +38,17 @@ class OpenAITranslator(BaseTranslator):
         if text in self._cache:
             return self._cache[text]
 
-        response = self.client.chat.completions.create(
-            model=self.model,
-            messages=[
-                {"role": "system", "content": SYSTEM_PROMPT},
-                {"role": "user", "content": text},
-            ],
-            temperature=0.3,
-            max_tokens=500,
+        response = call_with_retry(
+            lambda: self.client.chat.completions.create(
+                model=self.model,
+                messages=[
+                    {"role": "system", "content": SYSTEM_PROMPT},
+                    {"role": "user", "content": text},
+                ],
+                temperature=0.3,
+                max_tokens=500,
+            ),
+            what="OpenAI",
         )
         translated = response.choices[0].message.content.strip()
         self._cache[text] = translated
@@ -67,14 +71,18 @@ class OpenAITranslator(BaseTranslator):
             batch = segments[i : i + batch_size]
             texts = [seg.text for seg in batch]
 
-            response = self.client.chat.completions.create(
-                model=self.model,
-                messages=[
-                    {"role": "system", "content": SYSTEM_PROMPT},
-                    {"role": "user", "content": build_batch_prompt(texts)},
-                ],
-                temperature=0.3,
-                max_tokens=1000,
+            prompt = build_batch_prompt(texts)
+            response = call_with_retry(
+                lambda: self.client.chat.completions.create(
+                    model=self.model,
+                    messages=[
+                        {"role": "system", "content": SYSTEM_PROMPT},
+                        {"role": "user", "content": prompt},
+                    ],
+                    temperature=0.3,
+                    max_tokens=1000,
+                ),
+                what=f"OpenAI batch {i // batch_size + 1}",
             )
 
             raw = response.choices[0].message.content.strip()

@@ -1,10 +1,10 @@
 from __future__ import annotations
 
-import subprocess
 from pathlib import Path
 from typing import List, Optional
 
-from config.settings import FFMPEG_BIN, OUTPUT_DIR, TEMP_DIR
+from config.settings import FFMPEG_BIN, FFMPEG_TIMEOUT, OUTPUT_DIR, TEMP_DIR
+from utils.proc import run_command
 from core.transcriber import Segment
 
 
@@ -69,15 +69,10 @@ class VideoComposer:
 			str(out_path),
 		]
 
-		self._run(cmd)
+		run_command(
+			cmd,
+			timeout=FFMPEG_TIMEOUT,
+			error_message="Video compose failed. Check ffmpeg installation.",
+		)
 		return out_path
-
-	@staticmethod
-	def _run(cmd: list[str]) -> subprocess.CompletedProcess:
-		try:
-			return subprocess.run(cmd, capture_output=True, text=True, check=True)
-		except FileNotFoundError as exc:
-			raise RuntimeError("ffmpeg not found. Please install ffmpeg and add to PATH.") from exc
-		except subprocess.CalledProcessError as exc:
-			raise RuntimeError(f"Video compose failed:\n{exc.stderr.strip()}") from exc
 

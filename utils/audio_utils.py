@@ -1,10 +1,10 @@
 from __future__ import annotations
 
-import subprocess
 from pathlib import Path
 from typing import Iterable
 
-from config.settings import FFMPEG_BIN, FFPROBE_BIN
+from config.settings import FFMPEG_BIN, FFMPEG_TIMEOUT, FFPROBE_BIN, FFPROBE_TIMEOUT
+from utils.proc import run_command
 
 
 def get_audio_duration(audio_path: str | Path) -> float:
@@ -18,7 +18,11 @@ def get_audio_duration(audio_path: str | Path) -> float:
 		"default=noprint_wrappers=1:nokey=1",
 		str(audio_path),
 	]
-	completed = subprocess.run(cmd, capture_output=True, text=True, check=True)
+	completed = run_command(
+		cmd,
+		timeout=FFPROBE_TIMEOUT,
+		error_message="Cannot read audio duration. Check ffprobe installation.",
+	)
 	return float((completed.stdout or "0").strip() or 0)
 
 
@@ -45,7 +49,11 @@ def concat_audio(audio_paths: Iterable[str | Path], output_path: str | Path) -> 
 		"copy",
 		str(output_path),
 	]
-	subprocess.run(cmd, capture_output=True, text=True, check=True)
+	run_command(
+		cmd,
+		timeout=FFMPEG_TIMEOUT,
+		error_message="Cannot concatenate audio. Check ffmpeg installation.",
+	)
 	list_file.unlink(missing_ok=True)
 	return output_path
 

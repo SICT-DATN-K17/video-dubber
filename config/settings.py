@@ -114,6 +114,14 @@ WHISPER_BACKEND = os.getenv("WHISPER_BACKEND", "auto").strip().lower()
 # chay tuan tu khien buoc nay chiem phan lon thoi gian pipeline.
 TTS_CONCURRENCY = _env_int("TTS_CONCURRENCY", 8)
 
+# Timeout cho lenh ngoai. Ghep video la viec nang nen de rong tay;
+# ffprobe chi doc metadata nen rat nhanh.
+FFMPEG_TIMEOUT = _env_int("FFMPEG_TIMEOUT", 1800)
+FFPROBE_TIMEOUT = _env_int("FFPROBE_TIMEOUT", 60)
+
+# So lan thu lai khi API dich tra loi tam thoi (429, 5xx, timeout).
+LLM_MAX_RETRIES = _env_int("LLM_MAX_RETRIES", 4)
+
 FFMPEG_BIN = os.getenv("FFMPEG_BIN", "ffmpeg")
 FFPROBE_BIN = os.getenv("FFPROBE_BIN", "ffprobe")
 

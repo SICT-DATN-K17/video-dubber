@@ -14,6 +14,7 @@ from core.translator.base import BaseTranslator
 from core.translator.llm_common import (
     SYSTEM_PROMPT,
     build_batch_prompt,
+    call_with_retry,
     parse_numbered_lines,
 )
 from core.transcriber import Segment
@@ -28,34 +29,44 @@ class GeminiTranslator(BaseTranslator):
         self.client = genai.Client(api_key=api_key)
         self.model = model
         self._cache: dict[str, str] = {}
+        # Model 2.5 hỗ trợ tắt "thinking" cho nhanh; model cũ thì không.
+        # Lần đầu gặp lỗi vì cấu hình này thì nhớ lại để khỏi thử nữa.
+        self._thinking_supported = True
 
     @property
     def name(self) -> str:
         return f"Gemini {self.model}"
 
-    def _generate(self, prompt: str, max_output_tokens: int) -> str:
-        """Gọi Gemini một lần, tắt 'thinking' nếu model hỗ trợ để giảm độ trễ."""
-        base_kwargs = dict(
+    def _config(self, max_output_tokens: int, use_thinking: bool):
+        kwargs = dict(
             system_instruction=SYSTEM_PROMPT,
             temperature=0.3,
             max_output_tokens=max_output_tokens,
         )
-        try:
-            config = types.GenerateContentConfig(
-                thinking_config=types.ThinkingConfig(thinking_budget=0),
-                **base_kwargs,
-            )
-            response = self.client.models.generate_content(
-                model=self.model, contents=prompt, config=config
-            )
-        except Exception:
-            # Model không hỗ trợ thinking_config -> gọi lại với cấu hình cơ bản.
-            response = self.client.models.generate_content(
-                model=self.model,
-                contents=prompt,
-                config=types.GenerateContentConfig(**base_kwargs),
-            )
-        return (response.text or "").strip()
+        if use_thinking:
+            kwargs["thinking_config"] = types.ThinkingConfig(thinking_budget=0)
+        return types.GenerateContentConfig(**kwargs)
+
+    def _generate(self, prompt: str, max_output_tokens: int, what: str = "Gemini") -> str:
+        """Gọi Gemini, có thử lại khi gặp lỗi tạm thời (429/5xx/timeout)."""
+        for use_thinking in ([True, False] if self._thinking_supported else [False]):
+            config = self._config(max_output_tokens, use_thinking)
+            try:
+                response = call_with_retry(
+                    lambda: self.client.models.generate_content(
+                        model=self.model, contents=prompt, config=config
+                    ),
+                    what=what,
+                )
+                return (response.text or "").strip()
+            except Exception as exc:
+                if use_thinking:
+                    # Model không nhận thinking_config -> bỏ hẳn, không thử lại nữa.
+                    print(f"[Gemini] Model không hỗ trợ thinking_config ({exc}). Dùng cấu hình cơ bản.")
+                    self._thinking_supported = False
+                    continue
+                raise
+        raise RuntimeError("[Gemini] Không gọi được model.")  # không bao giờ tới đây
 
     def translate_text(self, text: str) -> str:
         """Dịch một đoạn văn ngắn."""
@@ -80,7 +91,11 @@ class GeminiTranslator(BaseTranslator):
             batch = segments[i : i + batch_size]
             texts = [seg.text for seg in batch]
 
-            raw = self._generate(build_batch_prompt(texts), max_output_tokens=2000)
+            raw = self._generate(
+                build_batch_prompt(texts),
+                max_output_tokens=2000,
+                what=f"Gemini batch {i // batch_size + 1}",
+            )
             parts = parse_numbered_lines(raw)
 
             for j, seg in enumerate(batch):

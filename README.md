@@ -235,7 +235,8 @@ của tiến trình web, không đụng gì tới Modal.
 - [x] `DATA_DIR` cấu hình được để trỏ vào Volume mount
 - [x] **Độ trễ:** TTS chạy song song (`ThreadPoolExecutor`, `TTS_CONCURRENCY=8`) — 68,5s → 6,1s
 - [x] **Độ trễ:** `faster-whisper` làm backend mặc định, openai-whisper giữ làm dự phòng — nhanh hơn 1,6–1,95×
-- [ ] Thêm `timeout=` cho mọi `subprocess.run` ffmpeg; retry có backoff cho batch dịch
+- [x] `timeout=` cho mọi lệnh ffmpeg/ffprobe qua `utils/proc.py` (`FFMPEG_TIMEOUT`, `FFPROBE_TIMEOUT`)
+- [x] Retry có backoff cho batch dịch OpenAI/Gemini (`LLM_MAX_RETRIES`), chỉ thử lại lỗi tạm thời
 - [ ] Đẩy output lên R2 + presigned URL (hiện đang dùng chung Volume, đủ dùng nhưng mọi lượt xem đều qua container web)
 - [ ] **Chạy `modal deploy` và kiểm chứng thật** — toàn bộ phần Modal ở trên mới chỉ dựng được định nghĩa app, chưa deploy lần nào
 
