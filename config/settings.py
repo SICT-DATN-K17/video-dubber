@@ -106,6 +106,7 @@ AI_PRESERVE_TERMS = [
 # Runner cho job: "thread" (chay trong tien trinh web) | "modal" (spawn GPU function)
 JOB_RUNNER = os.getenv("JOB_RUNNER", "thread").strip().lower()
 MODAL_APP_NAME = os.getenv("MODAL_APP_NAME", "video-dubber").strip()
+MODAL_DATA_VOLUME = os.getenv("MODAL_DATA_VOLUME", "dubber-data").strip()
 
 # Backend Whisper: "auto" (uu tien faster-whisper) | "faster" | "openai"
 WHISPER_BACKEND = os.getenv("WHISPER_BACKEND", "auto").strip().lower()

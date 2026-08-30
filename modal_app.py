@@ -32,17 +32,36 @@ image = (
     modal.Image.debian_slim(python_version="3.12")
     .apt_install("ffmpeg")
     .pip_install_from_requirements("requirements.txt")
-    .env(
-        {
-            # Model cache nằm trên volume, dùng lại giữa các lần chạy.
-            "HF_HOME": "/models/huggingface",
-            "XDG_CACHE_HOME": "/models/cache",
-            "DATA_DIR": "/data",
-            "JOB_RUNNER": "modal",
-        }
+    # add_local_* phai la lop CUOI CUNG — Modal cam moi build step sau no.
+    # Mount vao /root vi do la thu muc lam viec mac dinh cua container;
+    # de o cho khac thi `from wsgi import app` se khong tim thay module.
+    .add_local_dir(
+        ".",
+        remote_path="/root",
+        ignore=[
+            ".env*",          # KHONG bao gio dong goi secret vao image
+            "!.env.example",
+            ".git/**",
+            "data/**",
+            "**/__pycache__/**",
+            "**/*.pyc",
+            "*.mp4",
+            "*.wav",
+            ".venv/**",
+            "venv/**",
+        ],
     )
-    .add_local_dir(".", remote_path="/root/app", ignore=["data", "*.mp4", ".git", "migrations/versions/__pycache__"])
 )
+
+# Bien moi truong dat o muc function (chi ton tai luc chay), KHONG dat trong
+# image: HF_HOME/XDG_CACHE_HOME tro vao /models, ma neu image co san /models
+# thi Modal tu choi mount volume vao thu muc khong rong.
+RUNTIME_ENV = {
+    "HF_HOME": "/models/huggingface",
+    "XDG_CACHE_HOME": "/models/cache",
+    "DATA_DIR": "/data",
+    "JOB_RUNNER": "modal",
+}
 
 app = modal.App(APP_NAME, image=image)
 secrets = [modal.Secret.from_name("video-dubber")]
@@ -50,7 +69,7 @@ secrets = [modal.Secret.from_name("video-dubber")]
 VOLUMES = {"/data": data_volume, "/models": model_volume}
 
 
-@app.function(volumes=VOLUMES, secrets=secrets, min_containers=1, timeout=900)
+@app.function(volumes=VOLUMES, secrets=secrets, env=RUNTIME_ENV, min_containers=1, timeout=900)
 @modal.concurrent(max_inputs=20)
 @modal.wsgi_app()
 def web():
@@ -64,6 +83,7 @@ def web():
     gpu="T4",
     volumes=VOLUMES,
     secrets=secrets,
+    env=RUNTIME_ENV,
     timeout=3600,
     scaledown_window=300,
     max_containers=2,
@@ -103,12 +123,12 @@ class Dubber:
             data_volume.commit()
 
 
-@app.function(volumes=VOLUMES, secrets=secrets, timeout=600)
+@app.function(volumes=VOLUMES, secrets=secrets, env=RUNTIME_ENV, timeout=600)
 def migrate() -> None:
     """Chạy `flask db upgrade` trên Postgres trước mỗi lần deploy."""
     import subprocess
 
-    subprocess.run(["flask", "--app", "wsgi", "db", "upgrade"], check=True, cwd="/root/app")
+    subprocess.run(["flask", "--app", "wsgi", "db", "upgrade"], check=True, cwd="/root")
 
 
 @app.local_entrypoint()

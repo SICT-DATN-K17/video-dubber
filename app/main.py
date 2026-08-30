@@ -12,6 +12,7 @@ from sqlalchemy import text
 
 from app.extensions import db
 from app.models import Job, JobStatus
+from app.storage import refresh_outputs
 from config.settings import (
     FFMPEG_BIN,
     FFPROBE_BIN,
@@ -65,6 +66,11 @@ def serve_output(filename: str):
     ).first()
     if owned is None:
         return jsonify({"error": "Bạn không có quyền truy cập hoặc file không tồn tại."}), 403
+
+    # Tren Modal, file do container GPU ghi chi hien ra sau khi reload volume.
+    # Chi reload khi chua thay file, de khong ton mot lan goi mang moi request.
+    if not (OUTPUT_DIR / filename).exists():
+        refresh_outputs()
 
     return send_from_directory(OUTPUT_DIR, filename, as_attachment=False)
 

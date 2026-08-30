@@ -14,6 +14,7 @@ from werkzeug.utils import secure_filename
 from app.extensions import db
 from app.jobs import start_job
 from app.models import Job, JobStatus
+from app.storage import commit_uploads
 from config.settings import (
     GEMINI_API_KEY,
     GEMINI_MODEL,
@@ -75,6 +76,9 @@ def upload_video():
     safe_name = secure_filename(video.filename)
     upload_path = UPLOAD_DIR / f"{uuid.uuid4().hex}_{safe_name}"
     video.save(upload_path)
+
+    # Container GPU doc file nay qua Volume nen phai commit truoc khi spawn.
+    commit_uploads()
 
     job = Job(
         user_id=current_user.id,

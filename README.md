@@ -238,7 +238,15 @@ của tiến trình web, không đụng gì tới Modal.
 - [x] `timeout=` cho mọi lệnh ffmpeg/ffprobe qua `utils/proc.py` (`FFMPEG_TIMEOUT`, `FFPROBE_TIMEOUT`)
 - [x] Retry có backoff cho batch dịch OpenAI/Gemini (`LLM_MAX_RETRIES`), chỉ thử lại lỗi tạm thời
 - [ ] Đẩy output lên R2 + presigned URL (hiện đang dùng chung Volume, đủ dùng nhưng mọi lượt xem đều qua container web)
-- [ ] **Chạy `modal deploy` và kiểm chứng thật** — toàn bộ phần Modal ở trên mới chỉ dựng được định nghĩa app, chưa deploy lần nào
+- [x] **Đã deploy và kiểm chứng thật** — https://pnam1802--video-dubber-web.modal.run
+- [x] Đồng bộ Volume hai chiều: web `commit()` sau khi lưu upload, `reload()` khi phục vụ file kết quả (`app/storage.py`)
+
+Kết quả chạy thật trên production (video 86 giây, Whisper base + MarianMT + edge-tts):
+
+| | GTX 1650 (local) | **T4 (Modal, container ấm)** |
+|---|---|---|
+| Thời gian pipeline | 63,2s | **13,1s** |
+| Tổng kể cả upload | — | 30,0s |
 
 ### Phase 3 — API v1 (2 ngày)
 
