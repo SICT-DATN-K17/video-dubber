@@ -258,14 +258,30 @@ Kết quả chạy thật trên production (video 86 giây, Whisper base + Maria
 - [ ] `GET /stats` cho dashboard
 - [ ] Chuẩn hoá error shape `{error, code, detail}`
 
-### Phase 4 — Phân quyền & hạn mức (1,5 ngày)
+### Phase 4 — Phân quyền & hạn mức ✅ (đã xong)
 
-- [ ] `@require_role("admin")` áp lên mọi endpoint quản trị
-- [ ] Admin API: danh sách user, đổi role, khoá tài khoản
-- [ ] Quota theo user: số job/ngày, dung lượng, **số giây GPU đã dùng**
-- [ ] Flask-Limiter cho login / register / upload
-- [ ] Kiểm tra dung lượng *trước* khi ghi file
-- [ ] Ghi chi phí ước tính mỗi job để đặt trần chi tiêu
+- [x] `require_role()` trong `app/permissions.py`, áp lên mọi endpoint quản trị
+- [x] Admin API: `GET /api/admin/users`, `PATCH /api/admin/users/<id>` (đổi role, khoá, đặt hạn mức riêng), `GET /api/admin/stats`
+- [x] `GET /api/usage` cho user xem mức tiêu thụ của chính mình
+- [x] Quota theo user: số job/ngày, giây GPU/ngày, dung lượng lưu trữ — admin không bị giới hạn
+- [x] Kiểm tra hạn mức **trước** khi ghi file, dùng `Content-Length`
+- [x] Flask-Limiter cho login / register / upload
+- [x] `ProxyFix` để rate limit đếm theo IP thật, không gộp tất cả vào IP của proxy Modal
+- [x] `Job.estimated_cost_usd` + `User.quota_jobs_per_day`, migration `07861866bba4`
+
+Hạn mức mặc định (chỉnh bằng biến môi trường):
+
+| Biến | Mặc định | Ý nghĩa |
+|---|---|---|
+| `QUOTA_JOBS_PER_DAY` | 10 | Số job trong 24 giờ |
+| `QUOTA_GPU_SECONDS_PER_DAY` | 1800 | Tổng giây GPU trong 24 giờ |
+| `QUOTA_STORAGE_MB` | 2048 | Dung lượng video kết quả đang giữ |
+| `GPU_COST_PER_SECOND` | 0.000164 | Đơn giá T4 để ước tính chi phí |
+
+> **`estimated_cost_usd` là cận dưới, không phải hoá đơn.** Nó chỉ tính thời gian
+> pipeline chạy. Modal còn tính thời gian container nằm không sau job, cold start,
+> CPU, RAM và container web — thực tế cao hơn nhiều lần. Dùng để so sánh giữa user
+> và giữa các video; muốn số thật thì chạy `modal environment billing report`.
 
 ### Phase 5 — Frontend React (2–3 tuần)
 

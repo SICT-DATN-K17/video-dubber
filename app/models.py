@@ -44,6 +44,8 @@ class User(UserMixin, db.Model):
     # Flask-Login đọc thuộc tính is_active để quyết định có cho đăng nhập không.
     is_active = db.Column(db.Boolean, nullable=False, default=True, server_default=db.true())
     created_at = db.Column(db.DateTime(timezone=True), nullable=False, default=utcnow)
+    # None = dung han muc mac dinh trong settings; admin co the dat rieng.
+    quota_jobs_per_day = db.Column(db.Integer, nullable=True)
 
     jobs = db.relationship("Job", backref="user", lazy=True, cascade="all, delete-orphan")
 
@@ -84,6 +86,8 @@ class Job(db.Model):
     duration_sec = db.Column(db.Float, nullable=True)
     elapsed_sec = db.Column(db.Float, nullable=True)
     segment_count = db.Column(db.Integer, nullable=True)
+    # Uoc tinh tu elapsed_sec, KHONG phai hoa don Modal (xem app/quota.py).
+    estimated_cost_usd = db.Column(db.Float, nullable=True)
 
     # ── Modal (dùng từ Phase 2) ───────────────────────────────
     modal_call_id = db.Column(db.String(100), nullable=True, index=True)

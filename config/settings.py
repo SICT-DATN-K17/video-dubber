@@ -115,6 +115,25 @@ WHISPER_BACKEND = os.getenv("WHISPER_BACKEND", "auto").strip().lower()
 # chay tuan tu khien buoc nay chiem phan lon thoi gian pipeline.
 TTS_CONCURRENCY = _env_int("TTS_CONCURRENCY", 8)
 
+# Sau proxy (Modal, nginx), request.remote_addr la IP cua proxy — moi nguoi dung
+# se chung mot o rate limit. Bat ProxyFix de doc X-Forwarded-For.
+# CHI bat khi that su dung sau proxy, khong thi header nay gia mao duoc.
+TRUST_PROXY = _env_bool("TRUST_PROXY", IS_PRODUCTION)
+
+# Han muc cho moi user thuong (admin khong bi gioi han).
+QUOTA_JOBS_PER_DAY = _env_int("QUOTA_JOBS_PER_DAY", 10)
+QUOTA_GPU_SECONDS_PER_DAY = _env_int("QUOTA_GPU_SECONDS_PER_DAY", 1800)
+QUOTA_STORAGE_MB = _env_int("QUOTA_STORAGE_MB", 2048)
+
+# Don gia GPU de uoc tinh chi phi moi job. Mac dinh theo T4 tren Modal.
+GPU_COST_PER_SECOND = float(os.getenv("GPU_COST_PER_SECOND", "0.000164"))
+
+# Rate limit. Bo nho trong tien trinh: moi container web dem rieng, nen day la
+# lop chan tho. Muon dem chung toan he thong thi can Redis (Phase 6).
+RATELIMIT_LOGIN = os.getenv("RATELIMIT_LOGIN", "10 per minute")
+RATELIMIT_REGISTER = os.getenv("RATELIMIT_REGISTER", "5 per hour")
+RATELIMIT_UPLOAD = os.getenv("RATELIMIT_UPLOAD", "20 per hour")
+
 # Timeout cho lenh ngoai. Ghep video la viec nang nen de rong tay;
 # ffprobe chi doc metadata nen rat nhanh.
 FFMPEG_TIMEOUT = _env_int("FFMPEG_TIMEOUT", 1800)

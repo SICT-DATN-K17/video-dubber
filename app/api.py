@@ -11,11 +11,13 @@ from flask import Blueprint, current_app, jsonify, request
 from flask_login import current_user, login_required
 from werkzeug.utils import secure_filename
 
-from app.extensions import db
+from app.extensions import db, limiter
 from app.jobs import start_job
 from app.models import Job, JobStatus
+from app.quota import check_quota
 from app.storage import commit_uploads
 from config.settings import (
+    RATELIMIT_UPLOAD,
     GEMINI_API_KEY,
     GEMINI_MODEL,
     OPENAI_API_KEY,
@@ -42,6 +44,7 @@ def _pick(field: str, allowed: set[str], default: str) -> str:
 
 @bp.post("/upload")
 @login_required
+@limiter.limit(RATELIMIT_UPLOAD)
 def upload_video():
     video = request.files.get("video")
     if not video or not video.filename:
@@ -72,6 +75,12 @@ def upload_video():
     except ValueError:
         original_volume = 10.0
     original_volume = max(0.0, min(50.0, original_volume)) / 100.0
+
+    # Kiem tra han muc TRUOC khi ghi file: khong de mot nguoi vuot quota
+    # van kip do day dia bang cac file rac.
+    allowed, reason = check_quota(current_user, request.content_length or 0)
+    if not allowed:
+        return jsonify({"error": reason, "code": 429}), 429
 
     safe_name = secure_filename(video.filename)
     upload_path = UPLOAD_DIR / f"{uuid.uuid4().hex}_{safe_name}"

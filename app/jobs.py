@@ -17,6 +17,7 @@ from flask import Flask
 
 from app.extensions import db
 from app.models import Job, JobStatus, utcnow
+from app.quota import estimate_cost
 from config.settings import JOB_RUNNER, MODAL_APP_NAME
 from core.pipeline import DubbingConfig, DubbingPipeline
 
@@ -104,6 +105,7 @@ def run_job(flask_app: Flask, job_id: int, video_path: Path, config: DubbingConf
             return
 
         job.elapsed_sec = result.elapsed_seconds
+        job.estimated_cost_usd = estimate_cost(result.elapsed_seconds)
         job.segment_count = len(result.segments) if result.segments else None
         job.finished_at = utcnow()
 

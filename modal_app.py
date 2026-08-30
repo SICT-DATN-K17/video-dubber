@@ -69,7 +69,10 @@ secrets = [modal.Secret.from_name("video-dubber")]
 VOLUMES = {"/data": data_volume, "/models": model_volume}
 
 
-@app.function(volumes=VOLUMES, secrets=secrets, env=RUNTIME_ENV, min_containers=1, timeout=900)
+# Khong dat min_containers: container web luon-chay bi tinh tien 24/7 (~$4-6/thang)
+# du khong ai dung. Doi lai lan truy cap dau tien sau luc rieng phai cho container
+# khoi dong vai giay. Voi du an demo thi danh doi nay dang gia.
+@app.function(volumes=VOLUMES, secrets=secrets, env=RUNTIME_ENV, timeout=900)
 @modal.concurrent(max_inputs=20)
 @modal.wsgi_app()
 def web():
@@ -85,8 +88,11 @@ def web():
     secrets=secrets,
     env=RUNTIME_ENV,
     timeout=3600,
-    scaledown_window=300,
-    max_containers=2,
+    # Sau job cuoi, container GPU con song them bang nay giay va VAN TINH TIEN.
+    # 300s idle ton gap ~20 lan chinh 13s xu ly that. 60s du de gom cac job lien tiep.
+    scaledown_window=60,
+    # Tran chi tieu: toi da 1 container T4 cung luc, job den sau se xep hang.
+    max_containers=1,
 )
 class Dubber:
     """Container GPU: nạp model một lần rồi phục vụ nhiều job."""

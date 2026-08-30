@@ -8,13 +8,15 @@ from flask import Blueprint, flash, redirect, render_template, request, session,
 from flask_login import current_user, login_required, login_user, logout_user
 from werkzeug.security import check_password_hash, generate_password_hash
 
-from app.extensions import db
+from app.extensions import db, limiter
 from app.models import User
+from config.settings import RATELIMIT_LOGIN, RATELIMIT_REGISTER
 
 bp = Blueprint("auth", __name__)
 
 
 @bp.route("/login", methods=["GET", "POST"])
+@limiter.limit(RATELIMIT_LOGIN, methods=["POST"])
 def login():
     if current_user.is_authenticated:
         return redirect(url_for("main.index"))
@@ -38,6 +40,7 @@ def login():
 
 
 @bp.route("/register", methods=["GET", "POST"])
+@limiter.limit(RATELIMIT_REGISTER, methods=["POST"])
 def register():
     if current_user.is_authenticated:
         return redirect(url_for("main.index"))

@@ -8,15 +8,17 @@ from datetime import timedelta
 from pathlib import Path
 
 from flask import Flask
+from werkzeug.middleware.proxy_fix import ProxyFix
 
 from app.errors import register_error_handlers, register_unauthorized_handler
-from app.extensions import csrf, db, login_manager, migrate
+from app.extensions import csrf, db, limiter, login_manager, migrate
 from config.settings import (
     MAX_UPLOAD_MB,
     SECRET_KEY,
     SESSION_COOKIE_SAMESITE,
     SESSION_COOKIE_SECURE,
     SESSION_LIFETIME_DAYS,
+    TRUST_PROXY,
     SQLALCHEMY_DATABASE_URI,
 )
 
@@ -43,10 +45,16 @@ def create_app(config_overrides: dict | None = None) -> Flask:
     if config_overrides:
         app.config.update(config_overrides)
 
+    if TRUST_PROXY:
+        # Modal dat mot proxy truoc container; khong co buoc nay thi rate limit
+        # dem chung tat ca nguoi dung vao IP cua proxy.
+        app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1)
+
     db.init_app(app)
     migrate.init_app(app, db)
     login_manager.init_app(app)
     csrf.init_app(app)
+    limiter.init_app(app)
 
     from app import models  # noqa: F401  — để Alembic thấy được metadata
 
@@ -54,6 +62,7 @@ def create_app(config_overrides: dict | None = None) -> Flask:
     def load_user(user_id: str):
         return db.session.get(models.User, int(user_id))
 
+    from app.admin import bp as admin_bp
     from app.api import bp as api_bp
     from app.auth import bp as auth_bp
     from app.main import bp as main_bp
@@ -61,6 +70,7 @@ def create_app(config_overrides: dict | None = None) -> Flask:
     app.register_blueprint(main_bp)
     app.register_blueprint(auth_bp)
     app.register_blueprint(api_bp)
+    app.register_blueprint(admin_bp)
 
     register_error_handlers(app)
     register_unauthorized_handler()
