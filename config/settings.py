@@ -108,6 +108,10 @@ JOB_RUNNER = os.getenv("JOB_RUNNER", "thread").strip().lower()
 MODAL_APP_NAME = os.getenv("MODAL_APP_NAME", "video-dubber").strip()
 MODAL_DATA_VOLUME = os.getenv("MODAL_DATA_VOLUME", "dubber-data").strip()
 
+# Dang nhap bang Google. De trong thi chi con dang nhap bang mat khau.
+GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID", "").strip()
+GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET", "").strip()
+
 # Backend Whisper: "auto" (uu tien faster-whisper) | "faster" | "openai"
 WHISPER_BACKEND = os.getenv("WHISPER_BACKEND", "auto").strip().lower()
 

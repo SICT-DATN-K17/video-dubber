@@ -39,7 +39,12 @@ class User(UserMixin, db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(150), unique=True, nullable=False, index=True)
-    password_hash = db.Column(db.String(255), nullable=False)
+    # Nguoi dang nhap bang Google khong co mat khau.
+    password_hash = db.Column(db.String(255), nullable=True)
+    email = db.Column(db.String(255), nullable=True, index=True)
+    # Dinh danh bat bien cua Google. Khong dung email lam khoa vi email doi duoc.
+    google_sub = db.Column(db.String(64), unique=True, nullable=True, index=True)
+    avatar_url = db.Column(db.String(500), nullable=True)
     role = db.Column(db.String(20), nullable=False, default=Role.USER, server_default=Role.USER)
     # Flask-Login đọc thuộc tính is_active để quyết định có cho đăng nhập không.
     is_active = db.Column(db.Boolean, nullable=False, default=True, server_default=db.true())
@@ -48,6 +53,10 @@ class User(UserMixin, db.Model):
     quota_jobs_per_day = db.Column(db.Integer, nullable=True)
 
     jobs = db.relationship("Job", backref="user", lazy=True, cascade="all, delete-orphan")
+
+    @property
+    def uses_google(self) -> bool:
+        return bool(self.google_sub)
 
     @property
     def is_admin(self) -> bool:

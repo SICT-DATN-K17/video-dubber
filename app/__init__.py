@@ -63,6 +63,7 @@ def create_app(config_overrides: dict | None = None) -> Flask:
         return db.session.get(models.User, int(user_id))
 
     from app.admin import bp as admin_bp
+    from app.oauth import bp as oauth_bp, init_oauth
     from app.api import bp as api_bp
     from app.auth import bp as auth_bp
     from app.main import bp as main_bp
@@ -71,6 +72,8 @@ def create_app(config_overrides: dict | None = None) -> Flask:
     app.register_blueprint(auth_bp)
     app.register_blueprint(api_bp)
     app.register_blueprint(admin_bp)
+    app.register_blueprint(oauth_bp)
+    init_oauth(app)
 
     register_error_handlers(app)
     register_unauthorized_handler()

@@ -9,6 +9,7 @@ from flask_login import current_user, login_required, login_user, logout_user
 from werkzeug.security import check_password_hash, generate_password_hash
 
 from app.extensions import db, limiter
+from app.oauth import is_enabled as google_enabled
 from app.models import User
 from config.settings import RATELIMIT_LOGIN, RATELIMIT_REGISTER
 
@@ -26,17 +27,20 @@ def login():
         password = request.form.get("password", "")
 
         user = User.query.filter_by(username=username).first()
+        if user and not user.password_hash:
+            flash("Tài khoản này đăng nhập bằng Google.", "info")
+            return render_template("login.html", google_enabled=google_enabled())
         if user and check_password_hash(user.password_hash, password):
             if not user.is_active:
                 flash("Tài khoản đã bị khoá!", "danger")
-                return render_template("login.html")
+                return render_template("login.html", google_enabled=google_enabled())
             login_user(user)
             session.permanent = True
             flash("Đăng nhập thành công!", "success")
             return redirect(url_for("main.index"))
         flash("Sai thông tin đăng nhập!", "danger")
 
-    return render_template("login.html")
+    return render_template("login.html", google_enabled=google_enabled())
 
 
 @bp.route("/register", methods=["GET", "POST"])
@@ -51,7 +55,7 @@ def register():
 
         if not username or not password:
             flash("Vui lòng điền đủ!", "danger")
-            return render_template("register.html")
+            return render_template("register.html", google_enabled=google_enabled())
 
         if User.query.filter_by(username=username).first():
             flash("Tên đăng nhập đã tồn tại!", "danger")
@@ -65,7 +69,7 @@ def register():
             flash("Đăng ký thành công!", "success")
             return redirect(url_for("main.index"))
 
-    return render_template("register.html")
+    return render_template("register.html", google_enabled=google_enabled())
 
 
 @bp.route("/logout", methods=["POST"])
