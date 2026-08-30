@@ -95,6 +95,11 @@
         {% endif %}
 
         {% block form %}{% endblock %}
+
+        <div class="mt-xl pt-md border-t border-outline-variant flex flex-wrap gap-md text-label-sm font-label-sm uppercase tracking-wider">
+          <a href="{{ url_for('main.privacy') }}" class="text-on-surface-variant hover:text-primary">Chính sách bảo mật</a>
+          <a href="{{ url_for('main.terms') }}" class="text-on-surface-variant hover:text-primary">Điều khoản</a>
+        </div>
       </div>
     </div>
   </div>

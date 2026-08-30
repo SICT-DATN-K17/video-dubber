@@ -11,6 +11,7 @@ from flask_login import current_user, login_required
 from sqlalchemy import text
 
 from app.extensions import db
+from app.legal import PRIVACY, TERMS, UPDATED
 from app.models import Job, JobStatus
 from app.quota import get_usage
 from app.storage import refresh_outputs
@@ -77,6 +78,19 @@ def serve_output(filename: str):
         refresh_outputs()
 
     return send_from_directory(OUTPUT_DIR, filename, as_attachment=False)
+
+
+@bp.get("/privacy")
+def privacy():
+    """Công khai: Google yêu cầu URL này mới cho publish ứng dụng OAuth."""
+    return render_template("legal.html", page_title="Chính sách bảo mật",
+                           sections=PRIVACY, updated=UPDATED)
+
+
+@bp.get("/terms")
+def terms():
+    return render_template("legal.html", page_title="Điều khoản sử dụng",
+                           sections=TERMS, updated=UPDATED)
 
 
 @bp.get("/healthz")
