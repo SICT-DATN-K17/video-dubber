@@ -21,19 +21,24 @@ def _volume():
     return modal.Volume.from_name(MODAL_DATA_VOLUME)
 
 
-def commit_uploads() -> None:
-    """Đẩy file vừa ghi lên volume để container GPU đọc được ngay.
+def commit_volume() -> None:
+    """Ghi thay đổi trên volume xuống ngay, không đợi commit nền.
 
-    Modal có commit nền vài giây một lần, nhưng job được spawn ngay sau khi
-    lưu file — không commit tay thì container GPU có thể khởi động trước và
-    không thấy video.
+    Modal tự commit vài giây một lần, nhưng có hai lúc không chờ được:
+    job được spawn ngay sau khi lưu video (container GPU có thể khởi động
+    trước và không thấy file), và khi xoá file thì người dùng cần thấy kết
+    quả ngay.
     """
     if JOB_RUNNER != "modal":
         return
     try:
         _volume().commit()
     except Exception:
-        logger.exception("Không commit được volume sau khi lưu upload")
+        logger.exception("Không commit được volume")
+
+
+#: Tên cũ, giữ lại cho chỗ gọi sau khi lưu upload.
+commit_uploads = commit_volume
 
 
 def refresh_outputs() -> None:

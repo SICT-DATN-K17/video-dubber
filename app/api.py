@@ -15,8 +15,9 @@ from app.extensions import db, limiter
 from app.jobs import cancel_job, start_job
 from app.models import Job, JobStatus
 from app.quota import check_quota
-from app.storage import commit_uploads
+from app.storage import commit_uploads, commit_volume
 from config.settings import (
+    OUTPUT_DIR,
     RATELIMIT_UPLOAD,
     GEMINI_API_KEY,
     GEMINI_MODEL,
@@ -119,6 +120,81 @@ def upload_video():
 
     start_job(current_app._get_current_object(), job.id, upload_path, config)
     return jsonify({"job_id": job.id}), 202
+
+
+@bp.get("/jobs")
+@login_required
+def list_jobs():
+    """Lịch sử job của chính người dùng, có lọc và phân trang."""
+    query = Job.query.filter_by(user_id=current_user.id)
+
+    status = request.args.get("status", "").strip()
+    if status and status != "all":
+        query = query.filter(Job.status == status)
+
+    engine = request.args.get("engine", "").strip()
+    if engine and engine != "all":
+        query = query.filter(
+            db.or_(Job.translator_actual == engine, Job.translator_engine == engine)
+        )
+
+    keyword = request.args.get("q", "").strip()
+    if keyword:
+        query = query.filter(Job.source_filename.ilike(f"%{keyword}%"))
+
+    try:
+        page = max(1, int(request.args.get("page", 1)))
+    except ValueError:
+        page = 1
+    per_page = 20
+
+    total = query.count()
+    jobs = (
+        query.order_by(Job.created_at.desc(), Job.id.desc())
+        .limit(per_page)
+        .offset((page - 1) * per_page)
+        .all()
+    )
+
+    return jsonify(
+        {
+            "items": [job.to_list_dict() for job in jobs],
+            "page": page,
+            "per_page": per_page,
+            "total": total,
+            "pages": max(1, -(-total // per_page)),
+        }
+    )
+
+
+@bp.delete("/jobs/<int:job_id>")
+@login_required
+def delete_job(job_id: int):
+    job = Job.query.filter_by(id=job_id, user_id=current_user.id).first()
+    if job is None:
+        return jsonify({"error": "Không tìm thấy job.", "code": 404}), 404
+    if job.status in JobStatus.ACTIVE:
+        return jsonify({"error": "Job đang chạy, hãy huỷ trước khi xoá.", "code": 409}), 409
+
+    # Xoá luôn file trên đĩa, không chỉ bản ghi — nếu không thì dung lượng
+    # vẫn bị tính vào hạn mức mà người dùng không còn thấy video đâu.
+    removed = 0
+    for name in (job.video_name, job.srt_name):
+        if not name:
+            continue
+        try:
+            path = OUTPUT_DIR / name
+            if path.exists():
+                path.unlink()
+                removed += 1
+        except OSError:
+            current_app.logger.exception("Không xoá được file %s", name)
+    if removed:
+        commit_volume()
+
+    db.session.delete(job)
+    db.session.commit()
+    return jsonify({"deleted": job_id, "files_removed": removed})
 
 
 @bp.post("/jobs/<int:job_id>/cancel")

@@ -120,6 +120,25 @@ class Job(db.Model):
     def is_finished(self) -> bool:
         return self.status not in JobStatus.ACTIVE
 
+    def to_list_dict(self) -> dict[str, Any]:
+        """Payload gọn cho bảng lịch sử — không kèm thời gian từng bước."""
+        return {
+            "id": self.id,
+            "status": self.status,
+            "progress": self.progress,
+            "source_filename": self.source_filename,
+            "engine": self.translator_actual or self.translator_engine,
+            "fallback_used": bool(
+                self.translator_actual and self.translator_actual != self.translator_engine
+            ),
+            "elapsed_sec": round(self.elapsed_sec, 1) if self.elapsed_sec else None,
+            "estimated_cost_usd": self.estimated_cost_usd,
+            "file_size": self.file_size,
+            "video_url": self.video_url,
+            "srt_url": self.srt_url,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+        }
+
     def to_progress_dict(self) -> dict[str, Any]:
         """Payload cho endpoint theo dõi tiến trình."""
         result = None

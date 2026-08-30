@@ -1,0 +1,267 @@
+{% extends "layout.html" %}
+{% block title %}Lịch sử lồng tiếng · DUB_STUDIO{% endblock %}
+
+{% block content %}
+<div class="mb-lg flex flex-wrap items-center justify-between gap-md">
+  <h2 class="font-headline-xl text-headline-xl text-on-surface flex items-center gap-3">
+    <span class="material-symbols-outlined text-[32px] text-primary">history</span>Lịch sử lồng tiếng
+  </h2>
+  <a href="{{ url_for('main.index') }}"
+    class="bg-primary-container text-on-primary-container font-label-sm text-label-sm uppercase tracking-wider px-4 py-2 font-bold flex items-center gap-2">
+    <span class="material-symbols-outlined text-[18px]">add</span>Tạo mới
+  </a>
+</div>
+
+{# ── Thanh lọc ─────────────────────────────────────────── #}
+<div class="bg-surface-container rounded-2xl border border-outline-variant/30 p-md flex flex-wrap items-center gap-md mb-lg">
+  <div class="relative flex-1 min-w-[220px]">
+    <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-[18px]">search</span>
+    <input id="search" type="search" placeholder="Tìm theo tên video..."
+      class="w-full bg-background border border-outline-variant text-on-surface font-body-md text-body-md pl-10 pr-4 py-2 rounded-xl focus:outline-none focus:border-primary placeholder-outline">
+  </div>
+
+  <div class="flex flex-wrap gap-2" id="statusChips">
+    {% for value, label in [('all','Tất cả'), ('done','Hoàn tất'), ('processing','Đang xử lý'), ('queued','Đang chờ'), ('failed','Thất bại'), ('cancelled','Đã huỷ')] %}
+    <button type="button" data-status="{{ value }}"
+      class="chip px-3 py-1.5 rounded-full border font-label-sm text-label-sm transition-colors
+             {% if value == 'all' %}bg-primary text-on-primary border-primary{% else %}border-outline-variant text-on-surface-variant hover:text-on-surface{% endif %}">
+      {{ label }}
+    </button>
+    {% endfor %}
+  </div>
+
+  <select id="engineFilter"
+    class="bg-background border border-outline-variant text-on-surface font-body-md text-body-md px-3 py-2 rounded-xl focus:outline-none focus:border-primary">
+    <option value="all">Mọi công cụ</option>
+    <option value="marian">MarianMT</option>
+    <option value="gemini">Gemini</option>
+    <option value="openai">OpenAI</option>
+  </select>
+</div>
+
+{# ── Bảng ──────────────────────────────────────────────── #}
+<div class="bg-surface-container rounded-2xl border border-outline-variant/30 overflow-hidden">
+  <div class="overflow-x-auto">
+    <table class="w-full min-w-[820px]">
+      <thead>
+        <tr class="bg-surface-container-high">
+          {% for label in ['Video', 'Trạng thái', 'Công cụ', 'Thời gian xử lý', 'Chi phí', 'Ngày tạo', ''] %}
+          <th class="text-left px-4 py-3 font-label-sm text-label-sm uppercase tracking-wider text-on-surface-variant">{{ label }}</th>
+          {% endfor %}
+        </tr>
+      </thead>
+      <tbody id="rows"></tbody>
+    </table>
+  </div>
+
+  <div id="emptyState" class="hidden flex flex-col items-center gap-3 py-xl px-lg text-center">
+    <span class="material-symbols-outlined text-[48px] text-on-surface-variant">movie_off</span>
+    <p class="font-body-lg text-body-lg text-on-surface" id="emptyTitle">Chưa có video nào</p>
+    <p class="font-body-md text-body-md text-on-surface-variant" id="emptyHint">
+      Thử ngay video đầu tiên của bạn.
+    </p>
+    <a href="{{ url_for('main.index') }}" id="emptyAction"
+      class="mt-2 bg-primary text-on-primary font-label-sm text-label-sm uppercase tracking-wider px-4 py-2 rounded-full font-bold">
+      Tạo bản lồng tiếng
+    </a>
+    <button type="button" id="clearFilters"
+      class="hidden mt-2 border border-outline-variant text-on-surface-variant font-label-sm text-label-sm uppercase tracking-wider px-4 py-2 rounded-full">
+      Xoá bộ lọc
+    </button>
+  </div>
+
+  <div id="skeleton" class="flex flex-col gap-2 p-md">
+    {% for i in range(5) %}
+    <div class="h-12 rounded-xl bg-surface-container-high animate-pulse"></div>
+    {% endfor %}
+  </div>
+
+  <div id="pager" class="hidden flex items-center justify-between gap-md px-4 py-3 border-t border-outline-variant/40">
+    <span id="pagerText" class="font-label-sm text-label-sm text-on-surface-variant tabular"></span>
+    <div class="flex items-center gap-2">
+      <button type="button" id="prevPage"
+        class="w-9 h-9 rounded-full border border-outline-variant text-on-surface-variant hover:text-on-surface disabled:opacity-30 flex items-center justify-center">
+        <span class="material-symbols-outlined text-[18px]">chevron_left</span>
+      </button>
+      <span id="pageNum" class="font-label-sm text-label-sm text-on-surface tabular"></span>
+      <button type="button" id="nextPage"
+        class="w-9 h-9 rounded-full border border-outline-variant text-on-surface-variant hover:text-on-surface disabled:opacity-30 flex items-center justify-center">
+        <span class="material-symbols-outlined text-[18px]">chevron_right</span>
+      </button>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  (function () {
+    const CSRF = "{{ csrf_token() }}";
+    const STATUS = {
+      queued: ["Đang chờ", "text-on-surface-variant border-outline-variant"],
+      processing: ["Đang xử lý", "text-primary border-primary/50 bg-primary/10"],
+      done: ["Hoàn tất", "text-primary border-primary/50 bg-primary/10"],
+      failed: ["Thất bại", "text-error border-error/50 bg-error/10"],
+      cancelled: ["Đã huỷ", "text-on-surface-variant border-outline-variant"],
+      interrupted: ["Gián đoạn", "text-error border-error/50 bg-error/10"]
+    };
+
+    const state = { status: "all", engine: "all", q: "", page: 1 };
+    let timer = null;
+
+    const rows = document.getElementById("rows");
+    const empty = document.getElementById("emptyState");
+    const skeleton = document.getElementById("skeleton");
+    const pager = document.getElementById("pager");
+
+    function escapeHtml(value) {
+      const div = document.createElement("div");
+      div.textContent = value == null ? "" : value;
+      return div.innerHTML;
+    }
+
+    function formatDate(iso) {
+      if (!iso) return "—";
+      const d = new Date(iso);
+      const pad = function (n) { return String(n).padStart(2, "0"); };
+      return pad(d.getDate()) + "/" + pad(d.getMonth() + 1) + "/" + d.getFullYear() +
+        " " + pad(d.getHours()) + ":" + pad(d.getMinutes());
+    }
+
+    function render(data) {
+      skeleton.classList.add("hidden");
+
+      if (!data.items.length) {
+        rows.innerHTML = "";
+        pager.classList.add("hidden");
+        const filtered = state.status !== "all" || state.engine !== "all" || state.q;
+        document.getElementById("emptyTitle").textContent =
+          filtered ? "Không tìm thấy video nào khớp bộ lọc" : "Chưa có video nào";
+        document.getElementById("emptyHint").textContent =
+          filtered ? "Thử bỏ bớt điều kiện lọc." : "Thử ngay video đầu tiên của bạn.";
+        document.getElementById("emptyAction").classList.toggle("hidden", filtered);
+        document.getElementById("clearFilters").classList.toggle("hidden", !filtered);
+        empty.classList.remove("hidden");
+        return;
+      }
+
+      empty.classList.add("hidden");
+      rows.innerHTML = data.items.map(function (job) {
+        const badge = STATUS[job.status] || [job.status, "text-on-surface-variant border-outline-variant"];
+        const engine = job.engine ? escapeHtml(job.engine) : "—";
+        const fallback = job.fallback_used
+          ? ' <span class="material-symbols-outlined text-[14px] text-tertiary align-middle" title="Đã tự chuyển engine">swap_horiz</span>'
+          : "";
+        return '<tr class="border-t border-outline-variant/30 hover:bg-surface-container-high/60 transition-colors">' +
+          '<td class="px-4 py-3 max-w-[280px]">' +
+            '<a href="/job/' + job.id + '" class="font-body-md text-body-md text-on-surface hover:text-primary truncate block" title="' +
+            escapeHtml(job.source_filename) + '">' + escapeHtml(job.source_filename || "Job #" + job.id) + "</a>" +
+          "</td>" +
+          '<td class="px-4 py-3"><span class="inline-block px-2 py-0.5 rounded-full border font-label-sm text-label-sm ' +
+            badge[1] + '">' + badge[0] + "</span></td>" +
+          '<td class="px-4 py-3 font-body-md text-body-md text-on-surface-variant">' + engine + fallback + "</td>" +
+          '<td class="px-4 py-3 tabular text-on-surface-variant">' + (job.elapsed_sec ? job.elapsed_sec + "s" : "—") + "</td>" +
+          '<td class="px-4 py-3 tabular text-on-surface-variant">' +
+            (job.estimated_cost_usd ? "$" + job.estimated_cost_usd.toFixed(4) : "—") + "</td>" +
+          '<td class="px-4 py-3 tabular text-on-surface-variant">' + formatDate(job.created_at) + "</td>" +
+          '<td class="px-4 py-3 text-right whitespace-nowrap">' +
+            (job.video_url ? '<a href="' + job.video_url + '" download class="inline-flex text-on-surface-variant hover:text-primary p-1" title="Tải video"><span class="material-symbols-outlined text-[18px]">download</span></a>' : "") +
+            (job.srt_url ? '<a href="' + job.srt_url + '" download class="inline-flex text-on-surface-variant hover:text-primary p-1" title="Tải phụ đề"><span class="material-symbols-outlined text-[18px]">subtitles</span></a>' : "") +
+            '<button type="button" data-delete="' + job.id + '" class="inline-flex text-on-surface-variant hover:text-error p-1" title="Xoá"><span class="material-symbols-outlined text-[18px]">delete</span></button>' +
+          "</td></tr>";
+      }).join("");
+
+      const from = (data.page - 1) * data.per_page + 1;
+      const to = Math.min(data.page * data.per_page, data.total);
+      document.getElementById("pagerText").textContent = "Hiển thị " + from + "-" + to + " trong " + data.total;
+      document.getElementById("pageNum").textContent = data.page + " / " + data.pages;
+      document.getElementById("prevPage").disabled = data.page <= 1;
+      document.getElementById("nextPage").disabled = data.page >= data.pages;
+      pager.classList.toggle("hidden", data.pages <= 1 && data.total <= data.per_page);
+    }
+
+    async function load() {
+      skeleton.classList.remove("hidden");
+      const params = new URLSearchParams({
+        status: state.status, engine: state.engine, q: state.q, page: state.page
+      });
+      try {
+        const res = await fetch("/api/jobs?" + params.toString());
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Không tải được lịch sử.");
+        render(data);
+      } catch (err) {
+        skeleton.classList.add("hidden");
+        rows.innerHTML = '<tr><td colspan="7" class="px-4 py-6 text-center text-error font-body-md text-body-md">' +
+          escapeHtml(err.message) + "</td></tr>";
+      }
+    }
+
+    document.getElementById("statusChips").addEventListener("click", function (e) {
+      const btn = e.target.closest(".chip");
+      if (!btn) return;
+      state.status = btn.dataset.status;
+      state.page = 1;
+      document.querySelectorAll(".chip").forEach(function (c) {
+        const on = c === btn;
+        c.classList.toggle("bg-primary", on);
+        c.classList.toggle("text-on-primary", on);
+        c.classList.toggle("border-primary", on);
+        c.classList.toggle("text-on-surface-variant", !on);
+        c.classList.toggle("border-outline-variant", !on);
+      });
+      load();
+    });
+
+    document.getElementById("engineFilter").addEventListener("change", function (e) {
+      state.engine = e.target.value;
+      state.page = 1;
+      load();
+    });
+
+    document.getElementById("search").addEventListener("input", function (e) {
+      clearTimeout(timer);
+      timer = setTimeout(function () {
+        state.q = e.target.value.trim();
+        state.page = 1;
+        load();
+      }, 300);
+    });
+
+    document.getElementById("clearFilters").addEventListener("click", function () {
+      state.status = "all"; state.engine = "all"; state.q = ""; state.page = 1;
+      document.getElementById("search").value = "";
+      document.getElementById("engineFilter").value = "all";
+      document.querySelector('.chip[data-status="all"]').click();
+    });
+
+    document.getElementById("prevPage").addEventListener("click", function () {
+      if (state.page > 1) { state.page--; load(); }
+    });
+    document.getElementById("nextPage").addEventListener("click", function () {
+      state.page++; load();
+    });
+
+    rows.addEventListener("click", async function (e) {
+      const btn = e.target.closest("[data-delete]");
+      if (!btn) return;
+      if (!window.confirm("Xoá video này? Cả video và phụ đề sẽ bị xoá vĩnh viễn.")) return;
+      btn.disabled = true;
+      try {
+        const res = await fetch("/api/jobs/" + btn.dataset.delete, {
+          method: "DELETE",
+          headers: { "X-CSRFToken": CSRF }
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Không xoá được.");
+        load();
+      } catch (err) {
+        btn.disabled = false;
+        window.alert(err.message);
+      }
+    });
+
+    load();
+  })();
+</script>
+{% endblock %}

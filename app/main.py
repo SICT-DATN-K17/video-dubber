@@ -64,6 +64,12 @@ def index():
     )
 
 
+@bp.get("/lich-su")
+@login_required
+def history():
+    return render_template("history.html")
+
+
 @bp.get("/job/<int:job_id>")
 @login_required
 def job_detail(job_id: int):
