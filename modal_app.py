@@ -65,7 +65,12 @@ RUNTIME_ENV = {
 }
 
 app = modal.App(APP_NAME, image=image)
-secrets = [modal.Secret.from_name("video-dubber")]
+# Nhieu secret gop lai thanh mot tap bien moi truong. Tach rieng key Google
+# de khong phai nhap lai DATABASE_URL moi lan doi key.
+secrets = [
+    modal.Secret.from_name("video-dubber"),
+    modal.Secret.from_name("googlecloud-secret"),
+]
 
 VOLUMES = {"/data": data_volume, "/models": model_volume}
 
