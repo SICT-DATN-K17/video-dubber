@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import shutil
 
-from flask import Blueprint, current_app, jsonify, render_template, send_from_directory
+from flask import Blueprint, abort, current_app, jsonify, render_template, send_from_directory
 from flask_login import current_user, login_required
 from sqlalchemy import text
 
@@ -38,10 +38,12 @@ def _recent_outputs(limit: int = 8) -> list[dict[str, str | None]]:
     )
     return [
         {
+            "id": job.id,
             "video_name": job.video_name,
             "video_url": job.video_url,
             "srt_name": job.srt_name,
             "srt_url": job.srt_url,
+            "source_filename": job.source_filename,
         }
         for job in jobs
     ]
@@ -60,6 +62,16 @@ def index():
         usage=get_usage(current_user).as_dict(),
         max_upload_mb=MAX_UPLOAD_MB,
     )
+
+
+@bp.get("/job/<int:job_id>")
+@login_required
+def job_detail(job_id: int):
+    """Trang riêng cho một job: chia sẻ được link, tải lại trang không mất tiến trình."""
+    job = Job.query.filter_by(id=job_id, user_id=current_user.id).first()
+    if job is None:
+        abort(404)
+    return render_template("job.html", job=job)
 
 
 @bp.get("/media/output/<path:filename>")

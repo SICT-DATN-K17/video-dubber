@@ -12,7 +12,7 @@ from flask_login import current_user, login_required
 from werkzeug.utils import secure_filename
 
 from app.extensions import db, limiter
-from app.jobs import start_job
+from app.jobs import cancel_job, start_job
 from app.models import Job, JobStatus
 from app.quota import check_quota
 from app.storage import commit_uploads
@@ -119,6 +119,24 @@ def upload_video():
 
     start_job(current_app._get_current_object(), job.id, upload_path, config)
     return jsonify({"job_id": job.id}), 202
+
+
+@bp.post("/jobs/<int:job_id>/cancel")
+@login_required
+def cancel(job_id: int):
+    job = Job.query.filter_by(id=job_id, user_id=current_user.id).first()
+    if job is None:
+        return jsonify({"error": "Không tìm thấy job.", "code": 404}), 404
+    if job.status not in JobStatus.ACTIVE:
+        return jsonify({"error": "Job đã kết thúc, không huỷ được.", "code": 409}), 409
+
+    stopped = cancel_job(current_app._get_current_object(), job)
+    return jsonify({
+        "status": job.status,
+        # Runner thread khong dung giua chung duoc; Modal thi dung han.
+        "stopped": stopped,
+        "message": "Đã huỷ job." if stopped else "Đã đánh dấu huỷ, phần đang chạy sẽ dừng ở bước kế tiếp.",
+    })
 
 
 @bp.get("/progress/<int:job_id>")

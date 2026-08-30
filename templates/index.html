@@ -201,63 +201,7 @@
       <p id="submitHint" class="text-center font-label-sm text-label-sm text-on-surface-variant mt-2">Chọn video trước</p>
     </div>
 
-    {# ── Tiến trình ───────────────────────────────────── #}
-    <section id="progressCard" class="hidden bg-surface-container rounded-3xl p-lg border border-outline-variant/30 flex flex-col gap-md">
-      <div class="flex items-center justify-between">
-        <h3 class="font-headline-md text-headline-md text-on-surface">Đang xử lý</h3>
-        <span id="progressPct" class="tabular text-headline-md font-headline-md text-primary">0%</span>
-      </div>
-
-      <div class="grid grid-cols-2 sm:grid-cols-5 gap-2">
-        {% for key, label in [('extract','Tách audio'), ('transcribe','Nhận dạng'), ('translate','Dịch'), ('tts','Tổng hợp giọng'), ('compose','Ghép video')] %}
-        <div class="stage rounded-xl px-3 py-2 border border-outline-variant/50 bg-surface-container-high text-on-surface-variant font-label-sm text-label-sm text-center transition-colors"
-          data-stage="{{ key }}">{{ label }}</div>
-        {% endfor %}
-      </div>
-
-      <div class="w-full h-2 bg-surface-container-high rounded-full overflow-hidden">
-        <div id="progressBar" class="h-full bg-primary transition-all duration-500" style="width:0%"></div>
-      </div>
-      <p id="progressText" class="font-body-md text-body-md text-on-surface-variant">Đang gửi video...</p>
-
-      <button type="button" id="cancelBtn"
-        class="hidden self-start text-error hover:bg-error/10 px-3 py-2 rounded-lg font-label-sm text-label-sm uppercase tracking-wider">
-        Huỷ job
-      </button>
-    </section>
-
-    {# ── Kết quả ──────────────────────────────────────── #}
-    <section id="resultCard" class="hidden bg-surface-container rounded-3xl p-lg border border-primary/30 flex flex-col gap-md">
-      <h3 class="font-headline-md text-headline-md text-primary flex items-center gap-2">
-        <span class="material-symbols-outlined filled">check_circle</span>Xong rồi!
-      </h3>
-
-      <div id="fallbackNotice"
-        class="hidden rounded-xl border border-tertiary/40 bg-tertiary/10 px-4 py-3 font-body-md text-body-md text-tertiary"></div>
-
-      <video id="resultVideo" controls class="w-full rounded-2xl bg-background max-h-[420px]"></video>
-
-      <div id="timingBreakdown" class="hidden flex-col gap-2">
-        <p class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Thời gian từng bước</p>
-        <div id="timingBar" class="w-full h-3 rounded-full overflow-hidden flex bg-surface-container-high"></div>
-        <div id="timingLegend" class="flex flex-wrap gap-x-4 gap-y-1 font-label-sm text-label-sm text-on-surface-variant"></div>
-      </div>
-
-      <div class="flex flex-wrap gap-3">
-        <a id="downloadVideo" href="#" download
-          class="bg-primary text-on-primary font-label-sm text-label-sm uppercase tracking-wider px-4 py-2 rounded-full font-bold flex items-center gap-2">
-          <span class="material-symbols-outlined text-[18px]">download</span>Tải video
-        </a>
-        <a id="downloadSrt" href="#" download
-          class="hidden border border-outline-variant text-on-surface font-label-sm text-label-sm uppercase tracking-wider px-4 py-2 rounded-full flex items-center gap-2">
-          <span class="material-symbols-outlined text-[18px]">subtitles</span>Tải phụ đề
-        </a>
-        <button type="button" id="againBtn"
-          class="border border-outline-variant text-on-surface-variant font-label-sm text-label-sm uppercase tracking-wider px-4 py-2 rounded-full">
-          Làm video khác
-        </button>
-      </div>
-    </section>
+    <p id="uploadStatus" class="hidden text-center font-body-md text-body-md text-primary tabular"></p>
 
     {# ── Lỗi ──────────────────────────────────────────── #}
     <section id="errorCard" class="hidden bg-error-container/20 rounded-3xl p-lg border border-error/50 flex flex-col gap-3">
@@ -322,12 +266,8 @@
     {% for item in outputs %}
     <div class="bg-surface-container rounded-2xl border border-outline-variant/30 p-4 flex flex-col gap-2">
       <span class="font-body-md text-body-md text-on-surface truncate" title="{{ item.video_name }}">{{ item.video_name }}</span>
-      <div class="flex gap-3">
-        <a href="{{ item.video_url }}" class="text-primary font-label-sm text-label-sm uppercase tracking-wider">Xem</a>
-        {% if item.srt_url %}
-        <a href="{{ item.srt_url }}" class="text-on-surface-variant font-label-sm text-label-sm uppercase tracking-wider">Phụ đề</a>
-        {% endif %}
-      </div>
+      <a href="{{ url_for('main.job_detail', job_id=item.id) }}"
+        class="text-primary font-label-sm text-label-sm uppercase tracking-wider">Xem chi tiết</a>
     </div>
     {% endfor %}
   </div>
@@ -344,16 +284,13 @@
     const preview = document.getElementById("filePreview");
     const submitBtn = document.getElementById("submitBtn");
     const submitHint = document.getElementById("submitHint");
-    const progressCard = document.getElementById("progressCard");
-    const resultCard = document.getElementById("resultCard");
     const errorCard = document.getElementById("errorCard");
+    const uploadStatus = document.getElementById("uploadStatus");
     const engineField = document.getElementById("translator_engine");
     const whisperField = document.getElementById("whisper_model");
     const engineSelect = document.getElementById("translator_engine_select");
     const whisperSelect = document.getElementById("whisper_model_select");
 
-    let poller = null;
-    let currentJob = null;
 
     // ── Chọn file ────────────────────────────────────────
     function humanSize(bytes) {
@@ -473,113 +410,14 @@
     });
 
     // ── Tiến trình ───────────────────────────────────────
-    const STAGE_BY_PERCENT = [
-      [10, "extract"], [25, "transcribe"], [45, "translate"], [70, "tts"], [88, "compose"]
-    ];
-
-    function paintStages(percent) {
-      document.querySelectorAll(".stage").forEach(function (el) {
-        const idx = STAGE_BY_PERCENT.findIndex(function (s) { return s[1] === el.dataset.stage; });
-        const start = STAGE_BY_PERCENT[idx][0];
-        const next = idx + 1 < STAGE_BY_PERCENT.length ? STAGE_BY_PERCENT[idx + 1][0] : 101;
-        const done = percent >= next;
-        const active = percent >= start && percent < next;
-        el.classList.toggle("border-primary", active);
-        el.classList.toggle("text-primary", active || done);
-        el.classList.toggle("bg-primary/10", active);
-      });
-    }
-
-    function updateProgress(percent, message) {
-      const value = Math.max(0, Math.min(100, percent || 0));
-      document.getElementById("progressBar").style.width = value + "%";
-      document.getElementById("progressPct").textContent = value + "%";
-      document.getElementById("progressText").textContent = message || "Đang xử lý...";
-      paintStages(value);
-    }
-
-    const TIMING_LABELS = {
-      extract: ["Tách audio", "#8c947d"], transcribe: ["Nhận dạng", "#bdfd5d"],
-      translate: ["Dịch", "#9bd93c"], tts: ["Tổng hợp giọng", "#ffbfac"], compose: ["Ghép video", "#c2c7cb"]
-    };
-
-    function showTimings(timings) {
-      const entries = Object.keys(TIMING_LABELS)
-        .filter(function (k) { return timings && timings[k]; })
-        .map(function (k) { return [k, timings[k]]; });
-      if (!entries.length) return;
-      const total = entries.reduce(function (sum, e) { return sum + e[1]; }, 0);
-      document.getElementById("timingBar").innerHTML = entries.map(function (e) {
-        return '<div style="width:' + (e[1] / total * 100) + '%;background:' + TIMING_LABELS[e[0]][1] + '"></div>';
-      }).join("");
-      document.getElementById("timingLegend").innerHTML = entries.map(function (e) {
-        return '<span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full" style="background:' +
-          TIMING_LABELS[e[0]][1] + '"></span>' + TIMING_LABELS[e[0]][0] +
-          ' <span class="tabular">' + e[1].toFixed(1) + 's</span></span>';
-      }).join("");
-      document.getElementById("timingBreakdown").classList.remove("hidden");
-      document.getElementById("timingBreakdown").classList.add("flex");
-    }
-
-    function finish(data) {
-      clearInterval(poller);
-      progressCard.classList.add("hidden");
-      if (data.status === "done" && data.result) {
-        document.getElementById("resultVideo").src = data.result.video_url;
-        document.getElementById("downloadVideo").href = data.result.video_url;
-        document.getElementById("downloadVideo").download = data.result.video_name || "video.mp4";
-        const srt = document.getElementById("downloadSrt");
-        if (data.result.srt_url) {
-          srt.href = data.result.srt_url;
-          srt.download = data.result.srt_name || "phude.srt";
-          srt.classList.remove("hidden");
-        }
-        if (data.fallback_used) {
-          const notice = document.getElementById("fallbackNotice");
-          notice.textContent = data.translator_engine + " gặp lỗi nên hệ thống đã tự chuyển sang MarianMT. " +
-            "Chất lượng dịch có thể khác với lựa chọn ban đầu.";
-          notice.classList.remove("hidden");
-        }
-        showTimings(data.timings);
-        resultCard.classList.remove("hidden");
-      } else {
-        document.getElementById("errorMessage").textContent = data.message || "Không rõ nguyên nhân.";
-        errorCard.classList.remove("hidden");
-      }
-    }
-
-    function poll(jobId) {
-      poller = setInterval(async function () {
-        try {
-          const res = await fetch("/api/progress/" + jobId);
-          const data = await res.json();
-          if (!res.ok) throw new Error(data.error || "Không lấy được tiến trình.");
-          if (data.status === "queued" && typeof data.queue_position === "number") {
-            updateProgress(data.progress, data.queue_position > 0
-              ? "Đang chờ tới lượt — còn " + data.queue_position + " job trước bạn"
-              : "Đang chờ container GPU khởi động...");
-          } else {
-            updateProgress(data.progress, data.message);
-          }
-          if (["done", "failed", "cancelled", "interrupted"].indexOf(data.status) !== -1) finish(data);
-        } catch (err) {
-          clearInterval(poller);
-          document.getElementById("errorMessage").textContent = err.message;
-          errorCard.classList.remove("hidden");
-          progressCard.classList.add("hidden");
-        }
-      }, 1500);
-    }
-
     // ── Gửi form ─────────────────────────────────────────
     form.addEventListener("submit", function (e) {
       e.preventDefault();
       submitBtn.disabled = true;
       document.getElementById("submitLabel").textContent = "Đang tải lên...";
       errorCard.classList.add("hidden");
-      resultCard.classList.add("hidden");
-      progressCard.classList.remove("hidden");
-      updateProgress(1, "Đang tải video lên...");
+      uploadStatus.classList.remove("hidden");
+      uploadStatus.textContent = "Đang tải video lên...";
 
       // XHR để có tiến trình upload thật; fetch() không làm được việc này.
       const xhr = new XMLHttpRequest();
@@ -587,18 +425,17 @@
       xhr.upload.addEventListener("progress", function (evt) {
         if (evt.lengthComputable) {
           const pct = Math.round(evt.loaded / evt.total * 100);
-          document.getElementById("progressText").textContent = "Đang tải video lên... " + pct + "%";
+          uploadStatus.textContent = "Đang tải video lên... " + pct + "%";
         }
       });
       xhr.onload = function () {
         let data = {};
         try { data = JSON.parse(xhr.responseText); } catch (err) { /* trả về không phải JSON */ }
         if (xhr.status === 202 && data.job_id) {
-          currentJob = data.job_id;
-          updateProgress(1, "Đã nhận video, đang khởi tạo tác vụ...");
-          poll(data.job_id);
+          // Sang trang riêng của job: có link chia sẻ được, tải lại trang không mất tiến trình.
+          window.location = "/job/" + data.job_id;
         } else {
-          progressCard.classList.add("hidden");
+          uploadStatus.classList.add("hidden");
           document.getElementById("errorMessage").textContent = data.error || "Không tải lên được video.";
           errorCard.classList.remove("hidden");
           submitBtn.disabled = false;
@@ -606,7 +443,7 @@
         }
       };
       xhr.onerror = function () {
-        progressCard.classList.add("hidden");
+        uploadStatus.classList.add("hidden");
         document.getElementById("errorMessage").textContent = "Mất kết nối khi tải video lên.";
         errorCard.classList.remove("hidden");
         submitBtn.disabled = false;
@@ -615,7 +452,6 @@
       xhr.send(new FormData(form));
     });
 
-    document.getElementById("againBtn").addEventListener("click", function () { window.location.reload(); });
     document.getElementById("retryBtn").addEventListener("click", function () { window.location.reload(); });
 
     paintPresets("balanced");

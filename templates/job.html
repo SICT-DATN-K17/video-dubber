@@ -1,0 +1,259 @@
+{% extends "layout.html" %}
+{% block title %}{{ job.source_filename or 'Job' }} · DUB_STUDIO{% endblock %}
+
+{% block content %}
+{% set STATUS = {
+  'queued':      ('Đang chờ',    'text-on-surface-variant', 'schedule'),
+  'processing':  ('Đang xử lý',  'text-primary',            'sync'),
+  'done':        ('Hoàn tất',    'text-primary',            'check_circle'),
+  'failed':      ('Thất bại',    'text-error',              'error'),
+  'cancelled':   ('Đã huỷ',      'text-on-surface-variant', 'cancel'),
+  'interrupted': ('Gián đoạn',   'text-error',              'warning')
+} %}
+
+<div class="flex flex-wrap items-start justify-between gap-md mb-xl">
+  <div class="min-w-0">
+    <a href="{{ url_for('main.index') }}"
+      class="inline-flex items-center gap-1 text-on-surface-variant hover:text-primary font-label-sm text-label-sm uppercase tracking-wider mb-2">
+      <span class="material-symbols-outlined text-[16px]">arrow_back</span>Tạo bản lồng tiếng
+    </a>
+    <h2 class="font-headline-xl text-headline-xl text-on-surface truncate" title="{{ job.source_filename }}">
+      {{ job.source_filename or 'Job #' ~ job.id }}
+    </h2>
+    <p class="font-label-sm text-label-sm text-on-surface-variant mt-1 tabular">
+      Job #{{ job.id }} · {{ job.created_at.strftime('%d/%m/%Y %H:%M') if job.created_at }}
+    </p>
+  </div>
+
+  <span id="statusPill"
+    class="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-outline-variant font-label-sm text-label-sm uppercase tracking-wider {{ STATUS.get(job.status, ('', 'text-on-surface-variant', 'help'))[1] }}">
+    <span class="material-symbols-outlined text-[18px]">{{ STATUS.get(job.status, ('', '', 'help'))[2] }}</span>
+    <span id="statusText">{{ STATUS.get(job.status, (job.status, '', ''))[0] }}</span>
+  </span>
+</div>
+
+{# ── Đang chờ hoặc đang chạy ───────────────────────────── #}
+<section id="liveCard"
+  class="{% if job.is_finished %}hidden {% endif %}bg-surface-container rounded-3xl p-lg border border-outline-variant/30 flex flex-col gap-md mb-lg">
+  <div class="flex items-center justify-between">
+    <p id="progressText" class="font-body-lg text-body-lg text-on-surface-variant">{{ job.message }}</p>
+    <span id="progressPct" class="tabular text-headline-md font-headline-md text-primary">{{ job.progress }}%</span>
+  </div>
+
+  <div class="grid grid-cols-2 sm:grid-cols-5 gap-2">
+    {% for key, label in [('extract','Tách audio'), ('transcribe','Nhận dạng'), ('translate','Dịch'), ('tts','Tổng hợp giọng'), ('compose','Ghép video')] %}
+    <div class="stage rounded-xl px-3 py-2 border border-outline-variant/50 bg-surface-container-high text-on-surface-variant font-label-sm text-label-sm text-center transition-colors"
+      data-stage="{{ key }}">{{ label }}</div>
+    {% endfor %}
+  </div>
+
+  <div class="w-full h-2 bg-surface-container-high rounded-full overflow-hidden">
+    <div id="progressBar" class="h-full bg-primary transition-all duration-500" style="width: {{ job.progress }}%"></div>
+  </div>
+
+  <div class="flex items-center gap-4">
+    <button type="button" id="cancelBtn"
+      class="text-error hover:bg-error/10 px-4 py-2 rounded-full border border-error/40 font-label-sm text-label-sm uppercase tracking-wider">
+      Huỷ job
+    </button>
+    <span id="elapsed" class="tabular font-label-sm text-label-sm text-on-surface-variant"></span>
+  </div>
+</section>
+
+{# ── Hoàn tất ──────────────────────────────────────────── #}
+<section id="doneCard"
+  class="{% if job.status != 'done' %}hidden {% endif %}flex flex-col gap-md mb-lg">
+
+  <div id="fallbackNotice"
+    class="{% if not (job.translator_actual and job.translator_actual != job.translator_engine) %}hidden {% endif %}rounded-xl border border-tertiary/40 bg-tertiary/10 px-4 py-3 font-body-md text-body-md text-tertiary">
+    {{ job.translator_engine }} gặp lỗi nên hệ thống đã tự chuyển sang MarianMT.
+    Chất lượng dịch có thể khác với lựa chọn ban đầu.
+  </div>
+
+  <video id="resultVideo" controls class="w-full rounded-2xl bg-background max-h-[460px]"
+    {% if job.video_url %}src="{{ job.video_url }}"{% endif %}></video>
+
+  <div class="flex flex-wrap gap-3">
+    <a id="downloadVideo" href="{{ job.video_url or '#' }}" download="{{ job.video_name or 'video.mp4' }}"
+      class="bg-primary text-on-primary font-label-sm text-label-sm uppercase tracking-wider px-4 py-2 rounded-full font-bold flex items-center gap-2">
+      <span class="material-symbols-outlined text-[18px]">download</span>Tải video
+    </a>
+    {% if job.srt_url %}
+    <a href="{{ job.srt_url }}" download="{{ job.srt_name }}"
+      class="border border-outline-variant text-on-surface font-label-sm text-label-sm uppercase tracking-wider px-4 py-2 rounded-full flex items-center gap-2">
+      <span class="material-symbols-outlined text-[18px]">subtitles</span>Tải phụ đề
+    </a>
+    {% endif %}
+    <button type="button" id="copyLink"
+      class="border border-outline-variant text-on-surface-variant font-label-sm text-label-sm uppercase tracking-wider px-4 py-2 rounded-full flex items-center gap-2">
+      <span class="material-symbols-outlined text-[18px]">link</span><span>Chép liên kết</span>
+    </button>
+  </div>
+
+  {# Thời gian từng bước — dữ liệu thật, không phải ước lượng #}
+  {% set steps = [('Tách audio', job.extract_sec, '#8c947d'), ('Nhận dạng', job.transcribe_sec, '#bdfd5d'),
+                  ('Dịch', job.translate_sec, '#9bd93c'), ('Tổng hợp giọng', job.tts_sec, '#ffbfac'),
+                  ('Ghép video', job.compose_sec, '#c2c7cb')] %}
+  {% set measured = steps | selectattr('1') | list %}
+  {% if measured %}
+  {% set total = measured | map(attribute=1) | sum %}
+  <div class="bg-surface-container rounded-2xl p-lg border border-outline-variant/30 flex flex-col gap-3">
+    <p class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Thời gian từng bước</p>
+    <div class="w-full h-3 rounded-full overflow-hidden flex bg-surface-container-high">
+      {% for label, value, colour in measured %}
+      <div style="width: {{ (value / total * 100) | round(1) }}%; background: {{ colour }}" title="{{ label }}"></div>
+      {% endfor %}
+    </div>
+    <div class="flex flex-wrap gap-x-5 gap-y-1 font-label-sm text-label-sm text-on-surface-variant">
+      {% for label, value, colour in measured %}
+      <span class="flex items-center gap-1">
+        <span class="w-2 h-2 rounded-full" style="background: {{ colour }}"></span>
+        {{ label }} <span class="tabular text-on-surface">{{ '%.1f' % value }}s</span>
+        <span class="tabular">({{ (value / total * 100) | round | int }}%)</span>
+      </span>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+</section>
+
+{# ── Thất bại ──────────────────────────────────────────── #}
+<section id="failCard"
+  class="{% if job.status not in ['failed', 'interrupted'] %}hidden {% endif %}bg-error-container/20 rounded-3xl p-lg border border-error/50 flex flex-col gap-3 mb-lg">
+  <h3 class="font-headline-md text-headline-md text-error flex items-center gap-2">
+    <span class="material-symbols-outlined">error</span>
+    {% if job.status == 'interrupted' %}Bị gián đoạn{% else %}Không xử lý được{% endif %}
+  </h3>
+  <p id="failMessage" class="font-body-md text-body-md text-on-error-container">{{ job.message }}</p>
+  {% if job.error %}
+  <details class="mt-1">
+    <summary class="cursor-pointer font-label-sm text-label-sm uppercase tracking-wider text-on-surface-variant">
+      Chi tiết kỹ thuật
+    </summary>
+    <pre class="mt-2 p-3 rounded-xl bg-background border border-outline-variant/50 text-[12px] leading-relaxed text-on-surface-variant overflow-x-auto whitespace-pre-wrap">{{ job.error }}</pre>
+  </details>
+  {% endif %}
+  <a href="{{ url_for('main.index') }}"
+    class="self-start border border-error/60 text-error font-label-sm text-label-sm uppercase tracking-wider px-4 py-2 rounded-full">
+    Thử lại
+  </a>
+</section>
+
+{# ── Thông tin ─────────────────────────────────────────── #}
+<section class="bg-surface-container rounded-3xl p-lg border border-outline-variant/30">
+  <h3 class="font-headline-md text-headline-md text-on-surface mb-md">Thông tin</h3>
+  <dl class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+    {% set rows = [
+      ('Công cụ dịch', job.translator_actual or job.translator_engine or '—'),
+      ('Mô hình Whisper', job.whisper_model or '—'),
+      ('Giọng đọc', job.tts_engine or '—'),
+      ('Số câu', job.segment_count or '—'),
+      ('Thời gian xử lý', ('%.1f giây' % job.elapsed_sec) if job.elapsed_sec else '—'),
+      ('Dung lượng gốc', ('%.1f MB' % (job.file_size / 1048576)) if job.file_size else '—'),
+      ('Chi phí ước tính', ('$%.4f' % job.estimated_cost_usd) if job.estimated_cost_usd else '—'),
+      ('Bắt đầu', job.started_at.strftime('%H:%M:%S') if job.started_at else '—'),
+      ('Kết thúc', job.finished_at.strftime('%H:%M:%S') if job.finished_at else '—')
+    ] %}
+    {% for label, value in rows %}
+    <div class="flex flex-col gap-1">
+      <dt class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">{{ label }}</dt>
+      <dd class="font-body-md text-body-md text-on-surface tabular">{{ value }}</dd>
+    </div>
+    {% endfor %}
+  </dl>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  (function () {
+    const JOB_ID = {{ job.id }};
+    const FINISHED = {{ 'true' if job.is_finished else 'false' }};
+    const CSRF = "{{ csrf_token() }}";
+
+    const STAGE_BY_PERCENT = [[10, "extract"], [25, "transcribe"], [45, "translate"], [70, "tts"], [88, "compose"]];
+
+    function paintStages(percent) {
+      document.querySelectorAll(".stage").forEach(function (el) {
+        const idx = STAGE_BY_PERCENT.findIndex(function (s) { return s[1] === el.dataset.stage; });
+        const start = STAGE_BY_PERCENT[idx][0];
+        const next = idx + 1 < STAGE_BY_PERCENT.length ? STAGE_BY_PERCENT[idx + 1][0] : 101;
+        const active = percent >= start && percent < next;
+        el.classList.toggle("border-primary", active);
+        el.classList.toggle("bg-primary/10", active);
+        el.classList.toggle("text-primary", percent >= start);
+      });
+    }
+
+    document.getElementById("copyLink").addEventListener("click", async function () {
+      const btn = this;
+      try {
+        await navigator.clipboard.writeText(window.location.href);
+        btn.querySelector("span:last-child").textContent = "Đã chép";
+      } catch (e) {
+        btn.querySelector("span:last-child").textContent = window.location.href;
+      }
+      setTimeout(function () { btn.querySelector("span:last-child").textContent = "Chép liên kết"; }, 2000);
+    });
+
+    const cancelBtn = document.getElementById("cancelBtn");
+    cancelBtn.addEventListener("click", async function () {
+      cancelBtn.disabled = true;
+      cancelBtn.textContent = "Đang huỷ...";
+      try {
+        const res = await fetch("/api/jobs/" + JOB_ID + "/cancel", {
+          method: "POST",
+          headers: { "X-CSRFToken": CSRF }
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Không huỷ được.");
+        document.getElementById("progressText").textContent = data.message;
+        setTimeout(function () { window.location.reload(); }, 1200);
+      } catch (err) {
+        cancelBtn.disabled = false;
+        cancelBtn.textContent = "Huỷ job";
+        document.getElementById("progressText").textContent = err.message;
+      }
+    });
+
+    if (FINISHED) return;
+
+    paintStages({{ job.progress }});
+    const startedAt = Date.now();
+    setInterval(function () {
+      const s = Math.round((Date.now() - startedAt) / 1000);
+      document.getElementById("elapsed").textContent =
+        "Đã chạy " + String(Math.floor(s / 60)).padStart(2, "0") + ":" + String(s % 60).padStart(2, "0");
+    }, 1000);
+
+    const poller = setInterval(async function () {
+      try {
+        const res = await fetch("/api/progress/" + JOB_ID);
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Không lấy được tiến trình.");
+
+        document.getElementById("progressBar").style.width = data.progress + "%";
+        document.getElementById("progressPct").textContent = data.progress + "%";
+        paintStages(data.progress);
+
+        if (data.status === "queued" && typeof data.queue_position === "number") {
+          document.getElementById("progressText").textContent = data.queue_position > 0
+            ? "Đang chờ tới lượt — còn " + data.queue_position + " job trước bạn"
+            : "Đang chờ container GPU khởi động...";
+        } else {
+          document.getElementById("progressText").textContent = data.message;
+        }
+
+        if (["done", "failed", "cancelled", "interrupted"].indexOf(data.status) !== -1) {
+          clearInterval(poller);
+          // Tải lại để render bằng dữ liệu thật từ server, khỏi dựng lại toàn bộ giao diện bằng JS.
+          window.location.reload();
+        }
+      } catch (err) {
+        clearInterval(poller);
+        document.getElementById("progressText").textContent = err.message;
+      }
+    }, 1500);
+  })();
+</script>
+{% endblock %}
