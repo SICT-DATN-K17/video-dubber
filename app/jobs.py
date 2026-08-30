@@ -122,8 +122,11 @@ def run_job(flask_app: Flask, job_id: int, video_path: Path, config: DubbingConf
         else:
             job.status = JobStatus.FAILED
             job.progress = 0
-            job.message = "Xử lý thất bại."
             job.error = result.error or "Không rõ nguyên nhân."
+            # Kem theo ly do ngan gon: bao "Xu ly that bai" khong thi nguoi dung
+            # khong biet la loi API dich, thieu key hay video hong.
+            reason = " ".join(job.error.split())[:200]
+            job.message = f"Xử lý thất bại: {reason}"[:500]
 
         db.session.commit()
 

@@ -93,6 +93,9 @@ Gemini translation example:
 
 	python cli.py path/to/video.mp4 --translator gemini --gemini-api-key AIza...
 
+Mặc định dùng `gemini-3.6-flash`. Model 2.5 đã bị Google ngừng cấp cho tài khoản mới;
+liệt kê model khả dụng cho key của bạn bằng `client.models.list()` nếu gặp lỗi 404.
+
 VietTTS example:
 
 	python cli.py path/to/video.mp4 --tts-engine viettts
