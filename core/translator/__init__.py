@@ -6,6 +6,10 @@ def get_translator(engine: str, **kwargs):
         from core.translator.openai_translator import OpenAITranslator
 
         return OpenAITranslator(**kwargs)
+    if engine_key == "gemini":
+        from core.translator.gemini_translator import GeminiTranslator
+
+        return GeminiTranslator(**kwargs)
     if engine_key == "marian":
         from core.translator.marian_translator import MarianTranslator
 

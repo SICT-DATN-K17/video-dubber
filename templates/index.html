@@ -417,6 +417,7 @@
     </div>
 
     <form id="uploadForm" novalidate>
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
       <!-- ── STEP 1: Upload ── -->
       <div class="hero-card p-4 p-md-5 mb-4">
@@ -499,6 +500,7 @@
                 <select class="form-select form-select-sm" id="translator_engine" name="translator_engine">
                   <option value="marian" selected>MarianMT</option>
                   <option value="openai">MarianMT-v2</option>
+                  <option value="gemini">Gemini</option>
                 </select>
               </div>
 
@@ -589,6 +591,22 @@
              
                 <input type="password" class="form-control form-control-sm" id="openai_api_key" name="openai_api_key"
                   placeholder="{% if openai_key_exists %}Dùng key từ server{% else %}sk-...{% endif %}" disabled>
+              </div>
+
+              <!-- Gemini fields -->
+              <div class="col-sm-6" id="geminiModelGroup" style="display:none">
+                <label for="gemini_model" class="form-label">
+                  <i class="bi bi-stars me-1 text-primary"></i>Model Gemini
+                </label>
+                <input type="text" class="form-control form-control-sm" id="gemini_model" name="gemini_model"
+                  value="{{ default_gemini_model }}" placeholder="gemini-2.5-flash" disabled>
+              </div>
+              <div class="col-sm-6" id="geminiKeyGroup" style="display:none">
+                <label for="gemini_api_key" class="form-label">
+                  <i class="bi bi-key me-1 text-primary"></i>Gemini API key
+                </label>
+                <input type="password" class="form-control form-control-sm" id="gemini_api_key" name="gemini_api_key"
+                  placeholder="{% if gemini_key_exists %}Dùng key từ server{% else %}AIza...{% endif %}" disabled>
               </div>
 
             </div>
@@ -863,10 +881,14 @@
       document.getElementById('volumeValue').textContent = this.value;
     });
 
-    /* ── OpenAI fields toggle ── */
+    /* ── OpenAI / Gemini fields toggle ── */
     const translatorEngine = document.getElementById('translator_engine');
     const openaiModel = document.getElementById('openai_model');
     const openaiApiKey = document.getElementById('openai_api_key');
+    const geminiModel = document.getElementById('gemini_model');
+    const geminiApiKey = document.getElementById('gemini_api_key');
+    const geminiModelGroup = document.getElementById('geminiModelGroup');
+    const geminiKeyGroup = document.getElementById('geminiKeyGroup');
 
     function syncTranslatorFields() {
       const on = translatorEngine.value === 'openai';
@@ -874,6 +896,12 @@
       openaiApiKey.disabled = !on;
       openaiModel.classList.toggle('opacity-50', !on);
       openaiApiKey.classList.toggle('opacity-50', !on);
+
+      const useGemini = translatorEngine.value === 'gemini';
+      geminiModel.disabled = !useGemini;
+      geminiApiKey.disabled = !useGemini;
+      geminiModelGroup.style.display = useGemini ? '' : 'none';
+      geminiKeyGroup.style.display = useGemini ? '' : 'none';
     }
     translatorEngine.addEventListener('change', syncTranslatorFields);
     syncTranslatorFields();

@@ -1,0 +1,72 @@
+"""
+app/__init__.py
+Application factory: dựng Flask app, nạp cấu hình, bind extension và blueprint.
+"""
+from __future__ import annotations
+
+from datetime import timedelta
+from pathlib import Path
+
+from flask import Flask
+
+from app.errors import register_error_handlers, register_unauthorized_handler
+from app.extensions import csrf, db, login_manager, migrate
+from config.settings import (
+    MAX_UPLOAD_MB,
+    SECRET_KEY,
+    SESSION_COOKIE_SAMESITE,
+    SESSION_COOKIE_SECURE,
+    SESSION_LIFETIME_DAYS,
+    SQLALCHEMY_DATABASE_URI,
+)
+
+BASE_DIR = Path(__file__).resolve().parent.parent
+
+
+def create_app(config_overrides: dict | None = None) -> Flask:
+    app = Flask(
+        __name__,
+        template_folder=str(BASE_DIR / "templates"),
+        static_folder=str(BASE_DIR / "static"),
+    )
+
+    app.config.update(
+        SECRET_KEY=SECRET_KEY,
+        MAX_CONTENT_LENGTH=MAX_UPLOAD_MB * 1024 * 1024,
+        SESSION_COOKIE_HTTPONLY=True,
+        SESSION_COOKIE_SECURE=SESSION_COOKIE_SECURE,
+        SESSION_COOKIE_SAMESITE=SESSION_COOKIE_SAMESITE,
+        PERMANENT_SESSION_LIFETIME=timedelta(days=SESSION_LIFETIME_DAYS),
+        SQLALCHEMY_DATABASE_URI=SQLALCHEMY_DATABASE_URI,
+        SQLALCHEMY_TRACK_MODIFICATIONS=False,
+    )
+    if config_overrides:
+        app.config.update(config_overrides)
+
+    db.init_app(app)
+    migrate.init_app(app, db)
+    login_manager.init_app(app)
+    csrf.init_app(app)
+
+    from app import models  # noqa: F401  — để Alembic thấy được metadata
+
+    @login_manager.user_loader
+    def load_user(user_id: str):
+        return db.session.get(models.User, int(user_id))
+
+    from app.api import bp as api_bp
+    from app.auth import bp as auth_bp
+    from app.main import bp as main_bp
+
+    app.register_blueprint(main_bp)
+    app.register_blueprint(auth_bp)
+    app.register_blueprint(api_bp)
+
+    register_error_handlers(app)
+    register_unauthorized_handler()
+
+    from app.cli import register_cli
+
+    register_cli(app)
+
+    return app

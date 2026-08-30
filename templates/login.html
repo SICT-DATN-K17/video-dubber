@@ -17,6 +17,7 @@
         </div>
         
         <form method="post" class="vstack gap-4">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
           <div>
             <label for="username" class="form-label fw-medium"><i class="bi bi-person me-1 text-primary"></i>Tên đăng nhập</label>
             <input type="text" class="form-control form-control-lg" id="username" name="username" placeholder="Nhập tên đăng nhập..." required autocomplete="username">
@@ -34,7 +35,7 @@
           
           <div class="text-center mt-3 pt-3 border-top border-secondary border-opacity-25">
             <span class="text-secondary small">Chưa có tài khoản?</span>
-            <a href="{{ url_for('register') }}" class="text-primary text-decoration-none fw-bold ms-1">Tạo ngay</a>
+            <a href="{{ url_for('auth.register') }}" class="text-primary text-decoration-none fw-bold ms-1">Tạo ngay</a>
           </div>
         </form>
       </div>

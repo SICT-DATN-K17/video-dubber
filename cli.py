@@ -4,15 +4,18 @@ import argparse
 import sys
 from pathlib import Path
 
+from config.settings import GEMINI_API_KEY
 from core.pipeline import DubbingConfig, DubbingPipeline
 
 
 def parse_args() -> argparse.Namespace:
 	parser = argparse.ArgumentParser(description="AI Video Dubbing CLI (EN -> VI)")
 	parser.add_argument("video", help="Path to input video file")
-	parser.add_argument("--translator", choices=["openai", "marian"], default="marian")
+	parser.add_argument("--translator", choices=["openai", "gemini", "marian"], default="marian")
 	parser.add_argument("--openai-api-key", default="")
 	parser.add_argument("--openai-model", default="gpt-4o-mini")
+	parser.add_argument("--gemini-api-key", default="")
+	parser.add_argument("--gemini-model", default="gemini-2.5-flash")
 	parser.add_argument("--whisper-model", default="base")
 	parser.add_argument("--device", choices=["auto", "cuda", "cpu"], default="auto")
 	parser.add_argument("--no-sentence-resegment", action="store_true")
@@ -35,6 +38,8 @@ def main() -> int:
 		translator_engine=args.translator,
 		openai_api_key=args.openai_api_key,
 		openai_model=args.openai_model,
+		gemini_api_key=args.gemini_api_key or GEMINI_API_KEY,
+		gemini_model=args.gemini_model,
 		whisper_model=args.whisper_model,
 		compute_device=args.device,
 		sentence_resegment=not args.no_sentence_resegment,

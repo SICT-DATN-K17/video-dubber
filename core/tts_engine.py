@@ -4,6 +4,7 @@ import asyncio
 import re
 import sys
 import time
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from typing import List
 
@@ -15,54 +16,60 @@ for _stream in (sys.stdout, sys.stderr):
         except Exception:
             pass
 
-from config.settings import TEMP_DIR
+from config.settings import TEMP_DIR, TTS_CONCURRENCY
 from core.transcriber import Segment
 
 
 class TTSEngine:
 	"""Vietnamese text-to-speech wrapper for edge-tts and gTTS."""
 
-	def __init__(self, engine: str = "edge-tts", voice: str = "female", tts_dir: str | Path | None = None):
+	def __init__(
+		self,
+		engine: str = "edge-tts",
+		voice: str = "female",
+		tts_dir: str | Path | None = None,
+		concurrency: int | None = None,
+	):
 		self.engine = (engine or "edge-tts").strip().lower()
 		self.voice = voice
 		self.tts_dir = Path(tts_dir) if tts_dir else TEMP_DIR / "tts"
 		self.tts_dir.mkdir(parents=True, exist_ok=True)
+		self.concurrency = max(1, int(concurrency or TTS_CONCURRENCY))
 
 		self.edge_voice = "vi-VN-HoaiMyNeural" if voice == "female" else "vi-VN-NamMinhNeural"
 
 	def synthesize_all(self, segments: List[Segment]) -> List[tuple]:
-		"""Return list of (segment, path) pairs — only for successfully synthesized segments."""
-		results: List[tuple] = []
-		error_samples: list[str] = []
-		valid_segments = 0
+		"""Return list of (segment, path) pairs — only for successfully synthesized segments.
+
+		Các segment được tổng hợp song song: cả edge-tts lẫn gTTS đều chủ yếu là
+		thời gian chờ mạng, nên chạy tuần tự sẽ khiến bước này chiếm phần lớn
+		thời gian của cả pipeline.
+		"""
+		tasks: list[tuple[int, Segment, str]] = []
 		for idx, segment in enumerate(segments):
 			text = (segment.translated or segment.text).strip()
-			if not self._is_tts_text_valid(text):
-				continue
-			valid_segments += 1
-			out = self.tts_dir / f"seg_{idx:05d}.mp3"
-			try:
-				self.synthesize_text(text, out)
-				self._adjust_audio_duration(out, max(0, segment.end - segment.start))
-				results.append((segment, out))
-			except Exception as exc:
-				# Fallback to gTTS for non-gTTS engines
-				if self.engine != "gtts":
-					try:
-						self._synthesize_gtts(text, out)
-						self._adjust_audio_duration(out, max(0, segment.end - segment.start))
-						results.append((segment, out))
-						print(f"[TTS] Segment {idx}: fallback gTTS succeeded (primary error: {exc})")
-					except Exception as fb_exc:
-						err_msg = f"segment {idx}: {exc}; fallback gTTS failed: {fb_exc}"
-						print(f"[TTS] Skipping {err_msg}")
-						if len(error_samples) < 5:
-							error_samples.append(err_msg)
-				else:
-					err_msg = f"segment {idx}: {exc}"
-					print(f"[TTS] Skipping {err_msg}")
-					if len(error_samples) < 5:
-						error_samples.append(err_msg)
+			if self._is_tts_text_valid(text):
+				tasks.append((idx, segment, text))
+
+		valid_segments = len(tasks)
+		results: List[tuple] = []
+		error_samples: list[str] = []
+
+		if tasks:
+			workers = min(self.concurrency, len(tasks))
+			if workers > 1:
+				print(f"[TTS] Tổng hợp {len(tasks)} segment với {workers} luồng song song...")
+				with ThreadPoolExecutor(max_workers=workers, thread_name_prefix="tts") as pool:
+					# pool.map giữ nguyên thứ tự đầu vào nên segment không bị đảo.
+					outcomes = list(pool.map(lambda task: self._synthesize_segment(*task), tasks))
+			else:
+				outcomes = [self._synthesize_segment(*task) for task in tasks]
+
+			for pair, err_msg in outcomes:
+				if pair is not None:
+					results.append(pair)
+				elif err_msg and len(error_samples) < 5:
+					error_samples.append(err_msg)
 
 		if not results:
 			detail = (
@@ -73,6 +80,29 @@ class TTSEngine:
 				detail += " Sample errors: " + " | ".join(error_samples)
 			raise RuntimeError(detail)
 		return results
+
+	def _synthesize_segment(self, idx: int, segment: Segment, text: str) -> tuple[tuple | None, str | None]:
+		"""Tổng hợp một segment. Trả về ((segment, path), None) hoặc (None, thông báo lỗi)."""
+		out = self.tts_dir / f"seg_{idx:05d}.mp3"
+		target_duration = max(0, segment.end - segment.start)
+		try:
+			self.synthesize_text(text, out)
+			self._adjust_audio_duration(out, target_duration)
+			return (segment, out), None
+		except Exception as exc:
+			# Fallback to gTTS for non-gTTS engines
+			if self.engine != "gtts":
+				try:
+					self._synthesize_gtts(text, out)
+					self._adjust_audio_duration(out, target_duration)
+					print(f"[TTS] Segment {idx}: fallback gTTS succeeded (primary error: {exc})")
+					return (segment, out), None
+				except Exception as fb_exc:
+					err_msg = f"segment {idx}: {exc}; fallback gTTS failed: {fb_exc}"
+			else:
+				err_msg = f"segment {idx}: {exc}"
+			print(f"[TTS] Skipping {err_msg}")
+			return None, err_msg
 
 	def _adjust_audio_duration(self, audio_path: Path, target_duration: float, max_speed: float = 1.35) -> None:
 		"""

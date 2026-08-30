@@ -26,9 +26,11 @@ class DubbingConfig:
     """Toàn bộ cấu hình cho một lần chạy pipeline.
     tts_engine: "edge-tts" | "gtts"
     """
-    translator_engine: str = "openai"       # "openai" | "marian"
+    translator_engine: str = "openai"       # "openai" | "gemini" | "marian"
     openai_api_key: str = ""
     openai_model: str = "gpt-4o"
+    gemini_api_key: str = ""
+    gemini_model: str = "gemini-2.5-flash"
     whisper_model: str = "base"
     compute_device: str = "auto"           # "auto" | "cuda" | "cpu"
     sentence_resegment: bool = True
@@ -120,6 +122,8 @@ class DubbingPipeline:
             kwargs = {}
             if cfg.translator_engine == "openai":
                 kwargs = {"api_key": cfg.openai_api_key, "model": cfg.openai_model}
+            elif cfg.translator_engine == "gemini":
+                kwargs = {"api_key": cfg.gemini_api_key, "model": cfg.gemini_model}
             elif cfg.translator_engine == "marian":
                 kwargs = {"device": cfg.compute_device}
             translator = get_translator(cfg.translator_engine, **kwargs)

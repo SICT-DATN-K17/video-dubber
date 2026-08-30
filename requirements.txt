@@ -1,15 +1,39 @@
-Flask>=3.0.0
-Flask-SQLAlchemy>=3.1.0
-Flask-Login>=0.6.3
-Werkzeug>=3.0.0
-openai>=1.30.0
-python-dotenv>=1.0.0
-openai-whisper>=20231117
-gTTS>=2.5.1
-edge-tts>=6.1.10
-nest_asyncio>=1.5.0
-transformers>=4.40.0,<5.0
-torch>=2.2.0
-sentencepiece>=0.2.0
-pydub>=0.25.1
-soundfile>=0.12.0
+# Pinned để build lại được y hệt.
+# Đã đối chiếu với env thật của dự án ngày 29.08.2026 (torch 2.5.1+cu121, CUDA OK).
+# Khi nâng cấp: chạy `pip freeze` trong env đó rồi sửa lại file này.
+
+# ── Web ──────────────────────────────────────────────
+Flask==3.1.3
+Werkzeug==3.1.8
+Flask-SQLAlchemy==3.1.1
+Flask-Login==0.6.3
+Flask-WTF==1.3.0
+Flask-Migrate==4.1.0
+# Driver Postgres cho production (Neon/Supabase)
+psycopg[binary]==3.3.4
+waitress==3.0.2
+# Chi can khi deploy len Modal
+modal==1.5.5
+
+# ── Cấu hình ─────────────────────────────────────────
+python-dotenv==1.2.2
+
+# ── Dịch thuật ───────────────────────────────────────
+openai==2.52.0
+google-genai==2.14.0
+
+# ── Stack ML (pin theo env thật của dự án: miniconda3/envs/venv) ──
+# GPU: cài torch theo index CUDA riêng, ví dụ
+#   pip install torch==2.5.1 --index-url https://download.pytorch.org/whl/cu121
+torch==2.5.1
+faster-whisper==1.2.1
+# Giu lai lam backend du phong khi faster-whisper khong chay duoc
+openai-whisper==20250625
+transformers==4.57.6
+sentencepiece==0.2.1
+
+# ── Audio / TTS ──────────────────────────────────────
+gTTS==2.5.4
+edge-tts==7.2.8
+pydub==0.25.1
+soundfile==0.13.1

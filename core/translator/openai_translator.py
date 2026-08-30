@@ -8,22 +8,14 @@ from typing import List
 
 from openai import OpenAI
 
-from config.settings import OPENAI_API_KEY, OPENAI_MODEL, AI_PRESERVE_TERMS
+from config.settings import OPENAI_API_KEY, OPENAI_MODEL
 from core.translator.base import BaseTranslator
+from core.translator.llm_common import (
+    SYSTEM_PROMPT,
+    build_batch_prompt,
+    parse_numbered_lines,
+)
 from core.transcriber import Segment
-
-
-SYSTEM_PROMPT = """Bạn là chuyên gia dịch thuật tiếng Anh sang tiếng Việt, 
-chuyên lĩnh vực Trí tuệ nhân tạo (AI) và Học máy (ML).
-
-Quy tắc dịch:
-1. Dịch tự nhiên, chuẩn ngữ pháp tiếng Việt.
-2. Giữ nguyên các thuật ngữ kỹ thuật AI/ML bằng tiếng Anh (không dịch): 
-   {preserve_terms}
-3. Không thêm giải thích hay chú thích, chỉ trả về văn bản đã dịch.
-4. Giữ nguyên dấu câu và cấu trúc câu gốc.
-5. Dịch ngắn gọn, phù hợp để đọc thành lời nói.
-""".format(preserve_terms=", ".join(AI_PRESERVE_TERMS[:20]))
 
 
 class OpenAITranslator(BaseTranslator):
@@ -74,41 +66,19 @@ class OpenAITranslator(BaseTranslator):
         for i in range(0, len(segments), batch_size):
             batch = segments[i : i + batch_size]
             texts = [seg.text for seg in batch]
-            numbered = "\n".join(f"{idx+1}. {t}" for idx, t in enumerate(texts))
 
             response = self.client.chat.completions.create(
                 model=self.model,
                 messages=[
                     {"role": "system", "content": SYSTEM_PROMPT},
-                    {
-                        "role": "user",
-                        "content": (
-                            f"Dịch {len(texts)} câu sau từ tiếng Anh sang tiếng Việt.\n"
-                            f"Trả về đúng {len(texts)} dòng, mỗi dòng bắt đầu bằng số thứ tự tương ứng "
-                            f"(ví dụ: '1. ...', '2. ...'). Không thêm hoặc bỏ dòng nào.\n\n"
-                            f"{numbered}"
-                        ),
-                    },
+                    {"role": "user", "content": build_batch_prompt(texts)},
                 ],
                 temperature=0.3,
                 max_tokens=1000,
             )
 
             raw = response.choices[0].message.content.strip()
-            parts: dict[int, str] = {}
-            for line in raw.splitlines():
-                line = line.strip()
-                if not line:
-                    continue
-                # Tìm dòng dạng "1. ..." hoặc "1) ..."
-                for sep in (". ", ") "):
-                    if line[0].isdigit() and sep in line:
-                        idx_str, _, translation = line.partition(sep)
-                        try:
-                            parts[int(idx_str.strip())] = translation.strip()
-                        except ValueError:
-                            pass
-                        break
+            parts = parse_numbered_lines(raw)
 
             for j, seg in enumerate(batch):
                 seg.translated = parts.get(j + 1) or seg.text
