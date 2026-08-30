@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html class="dark" lang="vi">
+
+<head>
+  <meta charset="utf-8">
+  <meta content="width=device-width, initial-scale=1.0" name="viewport">
+  <title>{% block title %}Video Dubber{% endblock %}</title>
+  <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
+  <link href="https://fonts.googleapis.com" rel="preconnect">
+  <link crossorigin href="https://fonts.gstatic.com" rel="preconnect">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+    rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
+    rel="stylesheet">
+  <script>
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            "background": "#101416",
+            "surface": "#101416",
+            "surface-dim": "#101416",
+            "surface-bright": "#363a3c",
+            "surface-container-lowest": "#0b0f11",
+            "surface-container-low": "#181c1e",
+            "surface-container": "#1c2022",
+            "surface-container-high": "#272b2d",
+            "surface-container-highest": "#313538",
+            "surface-variant": "#313538",
+            "on-surface": "#e0e3e5",
+            "on-surface-variant": "#c2c9b1",
+            "on-background": "#e0e3e5",
+            "primary": "#bdfd5d",
+            "primary-container": "#a2e043",
+            "primary-fixed": "#b6f657",
+            "primary-fixed-dim": "#9bd93c",
+            "on-primary": "#213600",
+            "on-primary-container": "#3e6100",
+            "secondary": "#c2c7cb",
+            "tertiary": "#ffe4dd",
+            "error": "#ffb4ab",
+            "on-error": "#690005",
+            "error-container": "#93000a",
+            "on-error-container": "#ffdad6",
+            "outline": "#8c947d",
+            "outline-variant": "#424937"
+          },
+          spacing: { "xs": "4px", "sm": "8px", "md": "16px", "gutter": "16px", "lg": "24px", "xl": "32px" },
+          fontFamily: {
+            "body-lg": ["Be Vietnam Pro"], "body-md": ["Be Vietnam Pro"], "label-sm": ["Be Vietnam Pro"],
+            "headline-md": ["Be Vietnam Pro"], "headline-lg": ["Be Vietnam Pro"], "headline-xl": ["Be Vietnam Pro"],
+            "data-tabular": ["JetBrains Mono"]
+          },
+          fontSize: {
+            "body-lg": ["16px", { lineHeight: "24px", fontWeight: "400" }],
+            "body-md": ["14px", { lineHeight: "20px", fontWeight: "400" }],
+            "label-sm": ["12px", { lineHeight: "16px", letterSpacing: "0.05em", fontWeight: "500" }],
+            "headline-md": ["20px", { lineHeight: "28px", fontWeight: "600" }],
+            "headline-lg": ["24px", { lineHeight: "32px", fontWeight: "600" }],
+            "headline-xl": ["32px", { lineHeight: "40px", letterSpacing: "-0.02em", fontWeight: "700" }],
+            "data-tabular": ["14px", { lineHeight: "20px", fontWeight: "400" }]
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+    .material-symbols-outlined.filled { font-variation-settings: 'FILL' 1; }
+    body { background-color: #101416; color: #e0e3e5; font-family: 'Be Vietnam Pro', sans-serif; }
+    .tabular { font-family: 'JetBrains Mono', monospace; font-variant-numeric: tabular-nums; }
+  </style>
+  {% block head %}{% endblock %}
+</head>
+
+<body class="bg-background text-on-surface min-h-screen flex selection:bg-primary-container selection:text-on-primary">
+
+  {# ── Thanh điều hướng trái ─────────────────────────────── #}
+  <nav class="w-[240px] h-screen flex-col border-r border-outline-variant bg-background fixed left-0 top-0 z-50 hidden lg:flex">
+    <div class="px-md py-lg border-b border-outline-variant bg-surface-dim">
+      <h1 class="font-headline-md text-headline-md font-bold text-on-surface tracking-tighter">DUB_STUDIO</h1>
+      <p class="font-label-sm text-label-sm text-on-surface-variant uppercase mt-1">AI Dubbing Engine</p>
+    </div>
+
+    <div class="p-md">
+      <a href="{{ url_for('main.index') }}"
+        class="w-full flex items-center justify-center gap-2 bg-primary-container text-on-primary-container font-label-sm text-label-sm py-2 px-4 border border-primary-container hover:bg-primary-fixed transition-colors uppercase tracking-wider font-bold">
+        <span class="material-symbols-outlined text-[18px]">add</span>Tạo job mới
+      </a>
+    </div>
+
+    {% set nav_items = [
+      ('main.index', 'dashboard', 'Trang chủ'),
+    ] %}
+    <ul class="flex-1 overflow-y-auto py-2">
+      {% for endpoint, icon, label in nav_items %}
+      <li>
+        <a href="{{ url_for(endpoint) }}"
+          class="flex items-center gap-3 px-md py-3 font-body-md text-body-md transition-colors
+                 {% if request.endpoint == endpoint %}text-primary bg-primary/10 border-l-2 border-primary{% else %}text-on-surface-variant hover:text-on-surface hover:bg-surface-variant/50 border-l-2 border-transparent{% endif %}">
+          <span class="material-symbols-outlined">{{ icon }}</span>{{ label }}
+        </a>
+      </li>
+      {% endfor %}
+    </ul>
+
+    <div class="p-md border-t border-outline-variant">
+      <p class="font-label-sm text-label-sm text-on-surface-variant truncate" title="{{ current_user.username }}">
+        {{ current_user.username }}
+      </p>
+      {% if current_user.is_admin %}
+      <p class="font-label-sm text-label-sm text-primary uppercase mt-1">Quản trị viên</p>
+      {% endif %}
+    </div>
+  </nav>
+
+  <main class="lg:ml-[240px] w-full flex flex-col min-h-screen">
+    {# ── Thanh trên ──────────────────────────────────────── #}
+    <header
+      class="w-full h-16 flex items-center justify-between px-lg border-b border-outline-variant bg-surface-container-lowest sticky top-0 z-40">
+      <a href="{{ url_for('main.index') }}" class="lg:hidden font-headline-md text-headline-md font-bold tracking-tighter">DUB_STUDIO</a>
+      <div class="hidden lg:block"></div>
+      <div class="flex items-center gap-4">
+        <span class="material-symbols-outlined text-on-surface-variant">account_circle</span>
+        <form method="post" action="{{ url_for('auth.logout') }}" class="m-0">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button type="submit"
+            class="font-label-sm text-label-sm uppercase tracking-wider text-on-surface-variant hover:text-on-surface transition-colors">
+            Đăng xuất
+          </button>
+        </form>
+      </div>
+    </header>
+
+    {# ── Thông báo ───────────────────────────────────────── #}
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    <div class="px-lg pt-md flex flex-col gap-2">
+      {% for category, message in messages %}
+      <div class="rounded-xl px-4 py-3 font-body-md text-body-md border
+        {% if category == 'danger' %}bg-error-container/20 border-error/50 text-error
+        {% elif category == 'success' %}bg-primary/10 border-primary/40 text-primary
+        {% else %}bg-surface-container border-outline-variant text-on-surface-variant{% endif %}">
+        {{ message }}
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+    {% endwith %}
+
+    <div class="flex-1 overflow-y-auto p-lg flex justify-center">
+      <div class="w-full max-w-7xl">
+        {% block content %}{% endblock %}
+      </div>
+    </div>
+  </main>
+
+  {% block scripts %}{% endblock %}
+</body>
+
+</html>

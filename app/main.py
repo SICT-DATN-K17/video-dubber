@@ -12,9 +12,11 @@ from sqlalchemy import text
 
 from app.extensions import db
 from app.models import Job, JobStatus
+from app.quota import get_usage
 from app.storage import refresh_outputs
 from config.settings import (
     FFMPEG_BIN,
+    MAX_UPLOAD_MB,
     FFPROBE_BIN,
     GEMINI_API_KEY,
     GEMINI_MODEL,
@@ -54,6 +56,8 @@ def index():
         default_openai_model=OPENAI_MODEL,
         gemini_key_exists=bool(GEMINI_API_KEY),
         default_gemini_model=GEMINI_MODEL,
+        usage=get_usage(current_user).as_dict(),
+        max_upload_mb=MAX_UPLOAD_MB,
     )
 
 

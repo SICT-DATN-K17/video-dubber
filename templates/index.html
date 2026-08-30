@@ -1,1007 +1,625 @@
-{% extends "base.html" %}
-{% block title %}Dashboard | AI Video Dubber{% endblock %}
-
-{% block head %}
-<style>
-  /* ── Step indicator ── */
-  .step-list {
-    display: flex;
-    gap: 0;
-    counter-reset: step;
-  }
-
-  .step-item {
-    display: flex;
-    align-items: center;
-    gap: 0.6rem;
-    flex: 1;
-    position: relative;
-  }
-
-  .step-item:not(:last-child)::after {
-    content: '';
-    position: absolute;
-    left: calc(1.6rem + 0.6rem);
-    right: 0;
-    top: 50%;
-    height: 1px;
-    background: var(--surface-border);
-    z-index: 0;
-  }
-
-  .step-item.active:not(:last-child)::after,
-  .step-item.done:not(:last-child)::after {
-    background: var(--primary-color);
-    opacity: 0.5;
-  }
-
-  .step-dot {
-    width: 2rem;
-    height: 2rem;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 0.75rem;
-    font-weight: 700;
-    border: 2px solid var(--surface-border);
-    background: transparent;
-    color: var(--text-muted);
-    flex-shrink: 0;
-    position: relative;
-    z-index: 1;
-    transition: var(--transition);
-  }
-
-  .step-item.active .step-dot {
-    border-color: var(--primary-color);
-    background: rgba(59, 130, 246, 0.15);
-    color: var(--primary-color);
-  }
-
-  .step-item.done .step-dot {
-    border-color: #22c55e;
-    background: rgba(34, 197, 94, 0.15);
-    color: #22c55e;
-  }
-
-  .step-label {
-    font-size: 0.75rem;
-    font-weight: 600;
-    color: var(--text-muted);
-    white-space: nowrap;
-    display: none;
-  }
-
-  @media (min-width: 576px) {
-    .step-label {
-      display: block;
-    }
-  }
-
-  .step-item.active .step-label {
-    color: var(--text-main);
-  }
-
-  .step-item.done .step-label {
-    color: #22c55e;
-  }
-
-  /* ── Upload zone active state ── */
-  .file-upload-wrapper.dragover {
-    border-color: var(--primary-color);
-    background: rgba(59, 130, 246, 0.08);
-  }
-
-  .file-upload-wrapper.dragover .file-upload-wrapper-icon {
-    color: var(--primary-color);
-    transform: translateY(-4px) scale(1.1);
-  }
-
-  /* ── File meta chips ── */
-  .file-meta-chip {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.35rem;
-    padding: 0.3rem 0.75rem;
-    border-radius: 2rem;
-    font-size: 0.78rem;
-    font-weight: 600;
-    background: rgba(255, 255, 255, 0.06);
-    border: 1px solid var(--surface-border);
-    color: var(--text-muted);
-  }
-
-  html[data-bs-theme="light"] .file-meta-chip {
-    background: rgba(0, 0, 0, 0.05);
-  }
-
-  .file-meta-chip i {
-    font-size: 0.85rem;
-  }
-
-  /* ── Large-file warning ── */
-  #largeFileWarning {
-    background: rgba(245, 158, 11, 0.1);
-    border: 1px solid rgba(245, 158, 11, 0.3);
-    border-radius: 0.75rem;
-    color: #f59e0b;
-  }
-
-  /* ── Settings panel ── */
-  .settings-panel {
-    background: rgba(255, 255, 255, 0.025);
-    border: 1px solid var(--surface-border);
-    border-radius: 1rem;
-    overflow: hidden;
-  }
-
-  html[data-bs-theme="light"] .settings-panel {
-    background: rgba(0, 0, 0, 0.02);
-  }
-
-  .settings-panel-header {
-    padding: 0.875rem 1.25rem;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    user-select: none;
-    transition: background 0.2s;
-  }
-
-  .settings-panel-header:hover {
-    background: rgba(255, 255, 255, 0.04);
-  }
-
-  html[data-bs-theme="light"] .settings-panel-header:hover {
-    background: rgba(0, 0, 0, 0.03);
-  }
-
-  .settings-chevron {
-    transition: transform 0.25s ease;
-    color: var(--text-muted);
-  }
-
-  .settings-panel.open .settings-chevron {
-    transform: rotate(180deg);
-  }
-
-  .settings-body {
-    padding: 1.25rem;
-    border-top: 1px solid var(--surface-border);
-  }
-
-  /* ── Gradient primary button ── */
-  .btn-primary-gradient {
-    background: linear-gradient(135deg, #3b82f6 0%, #6366f1 100%);
-    border: none;
-    color: #fff;
-    font-weight: 700;
-    letter-spacing: -0.01em;
-    box-shadow: 0 4px 18px -4px rgba(99, 102, 241, 0.55), 0 2px 6px -2px rgba(59, 130, 246, 0.4);
-    transition: var(--transition);
-    border-radius: 0.875rem;
-    padding: 0.85rem 2rem;
-    font-size: 1rem;
-  }
-
-  .btn-primary-gradient:hover:not(:disabled) {
-    background: linear-gradient(135deg, #2563eb 0%, #4f46e5 100%);
-    box-shadow: 0 8px 28px -6px rgba(99, 102, 241, 0.65), 0 4px 10px -3px rgba(59, 130, 246, 0.5);
-    transform: translateY(-2px);
-    color: #fff;
-  }
-
-  .btn-primary-gradient:active:not(:disabled) {
-    transform: translateY(0);
-  }
-
-  .btn-primary-gradient:disabled {
-    opacity: 0.65;
-    cursor: not-allowed;
-  }
-
-  /* ── Skeleton loader ── */
-  .skeleton {
-    border-radius: 0.5rem;
-    background: linear-gradient(90deg,
-        rgba(255, 255, 255, 0.05) 25%,
-        rgba(255, 255, 255, 0.1) 50%,
-        rgba(255, 255, 255, 0.05) 75%);
-    background-size: 200% 100%;
-    animation: shimmer 1.6s infinite;
-  }
-
-  html[data-bs-theme="light"] .skeleton {
-    background: linear-gradient(90deg,
-        rgba(0, 0, 0, 0.04) 25%,
-        rgba(0, 0, 0, 0.08) 50%,
-        rgba(0, 0, 0, 0.04) 75%);
-    background-size: 200% 100%;
-  }
-
-  @keyframes shimmer {
-    0% {
-      background-position: 200% 0;
-    }
-
-    100% {
-      background-position: -200% 0;
-    }
-  }
-
-  /* ── Processing card ── */
-  #progressCard {
-    border: 1px solid rgba(59, 130, 246, 0.2);
-    background: rgba(59, 130, 246, 0.05);
-  }
-
-  .processing-skeleton-row {
-    height: 12px;
-    margin-bottom: 0.6rem;
-  }
-
-  .processing-skeleton-row:last-child {
-    width: 60%;
-    margin-bottom: 0;
-  }
-
-  /* ── Result card ── */
-  #resultCard {
-    border: 1px solid rgba(34, 197, 94, 0.25) !important;
-    background: rgba(34, 197, 94, 0.04) !important;
-  }
-
-  .result-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.4rem;
-    padding: 0.35rem 0.9rem;
-    border-radius: 2rem;
-    font-size: 0.78rem;
-    font-weight: 700;
-    background: rgba(34, 197, 94, 0.15);
-    color: #22c55e;
-    border: 1px solid rgba(34, 197, 94, 0.3);
-  }
-
-  /* ── Estimated time badge ── */
-  .est-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.35rem;
-    padding: 0.3rem 0.8rem;
-    border-radius: 2rem;
-    font-size: 0.78rem;
-    font-weight: 600;
-    background: rgba(139, 92, 246, 0.12);
-    color: #a78bfa;
-    border: 1px solid rgba(139, 92, 246, 0.25);
-  }
-
-  /* ── Recent item: thumbnail placeholder ── */
-  .recent-thumb {
-    width: 44px;
-    height: 44px;
-    border-radius: 0.75rem;
-    background: linear-gradient(135deg, rgba(59, 130, 246, 0.25), rgba(139, 92, 246, 0.35));
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-    color: rgba(255, 255, 255, 0.7);
-  }
-
-  /* ── Pipeline status items ── */
-  .pipeline-status-item {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    padding: 0.5rem 0.75rem;
-    border-radius: 0.75rem;
-    background: rgba(255, 255, 255, 0.025);
-    border: 1px solid var(--surface-border);
-  }
-
-  html[data-bs-theme="light"] .pipeline-status-item {
-    background: rgba(0, 0, 0, 0.02);
-  }
-
-  .pipeline-dot {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    flex-shrink: 0;
-    animation: pulse-dot 2s infinite;
-  }
-
-  .pipeline-online-badge {
-    font-size: .68rem;
-    font-weight: 700;
-    padding: .2rem .6rem;
-    border-radius: 2rem;
-    background: rgba(34, 197, 94, 0.12);
-    color: #22c55e;
-    border: 1px solid rgba(34, 197, 94, 0.25);
-    white-space: nowrap;
-  }
-
-  /* ── Pulse dot ── */
-  @keyframes pulse-dot {
-
-    0%,
-    100% {
-      opacity: 1;
-      transform: scale(1);
-    }
-
-    50% {
-      opacity: 0.5;
-      transform: scale(0.8);
-    }
-  }
-
-  .pulse-dot {
-    animation: pulse-dot 2s infinite;
-  }
-
-  /* ── Step sections ── */
-  .step-section {
-    border-radius: 1rem;
-    padding: 1.5rem;
-    border: 1px solid var(--surface-border);
-    background: rgba(255, 255, 255, 0.015);
-  }
-
-  html[data-bs-theme="light"] .step-section {
-    background: rgba(0, 0, 0, 0.01);
-  }
-
-  .step-section-number {
-    width: 1.75rem;
-    height: 1.75rem;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 0.72rem;
-    font-weight: 800;
-    background: rgba(59, 130, 246, 0.15);
-    color: var(--primary-color);
-    border: 1.5px solid rgba(59, 130, 246, 0.3);
-    flex-shrink: 0;
-  }
-</style>
-{% endblock %}
+{% extends "layout.html" %}
+{% block title %}Tạo bản lồng tiếng · DUB_STUDIO{% endblock %}
 
 {% block content %}
-
-<!-- ── Page header ── -->
-<div class="mb-5">
-  <div class="d-flex align-items-center gap-2 mb-2">
-    <span class="pulse-dot"
-      style="width:8px;height:8px;border-radius:50%;background:#22c55e;display:inline-block;"></span>
-    <span class="text-secondary small fw-semibold text-uppercase" style="letter-spacing:.08em;">Pipeline sẵn sàng</span>
-  </div>
-  <h1 class="fw-bold mb-1" style="font-size:clamp(1.6rem,4vw,2.2rem);letter-spacing:-0.03em;">
-    AI Video Dubbing
-  </h1>
-  <p class="text-secondary mb-0" style="max-width:520px;">
-    Upload video — WhisperX, MarianMT và TTS sẽ lo phần còn lại. Từ phiên âm đến giọng nói hoàn chỉnh.
-  </p>
+<div class="mb-xl flex items-center justify-between">
+  <h2 class="font-headline-xl text-headline-xl text-on-surface flex items-center gap-3">
+    <span class="material-symbols-outlined text-[32px] text-primary">campaign</span>Tạo bản lồng tiếng
+  </h2>
 </div>
 
-<!-- ── Main grid ── -->
-<div class="row g-4 align-items-start">
+<form id="uploadForm" novalidate class="grid grid-cols-1 lg:grid-cols-12 gap-lg items-start">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
-  <!-- ════════════════ LEFT: 3-step form ════════════════ -->
-  <div class="col-lg-8">
+  {# Preset ghi vào hai trường thật này; "Tuỳ chỉnh nâng cao" sửa trực tiếp #}
+  <input type="hidden" name="translator_engine" id="translator_engine" value="marian">
+  <input type="hidden" name="whisper_model" id="whisper_model" value="small">
 
-    <!-- Step indicator -->
-    <div class="hero-card px-4 py-3 mb-4">
-      <div class="step-list">
-        <div class="step-item active" id="stepIndicator1">
-          <div class="step-dot"><i class="bi bi-upload" style="font-size:.7rem;"></i></div>
-          <span class="step-label">Upload</span>
+  <div class="lg:col-span-8 flex flex-col gap-lg">
+
+    {# ── Bước 1: chọn video ───────────────────────────── #}
+    <section class="bg-surface-container rounded-3xl p-lg border border-outline-variant/30 flex flex-col gap-md">
+      <h3 class="font-headline-md text-headline-md text-on-surface flex items-center gap-2">
+        <span class="bg-primary/20 text-primary w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm">1</span>
+        Chọn video
+      </h3>
+
+      <input type="file" name="video" id="video" accept=".mp4,.mov,.avi,.mkv,.webm" class="hidden">
+
+      <label for="video" id="dropzone"
+        class="border-2 border-dashed border-outline-variant hover:border-primary/50 transition-colors rounded-2xl p-xl flex flex-col items-center justify-center gap-4 bg-surface-variant/20 cursor-pointer group">
+        <div class="w-16 h-16 rounded-full bg-surface-container-high flex items-center justify-center group-hover:bg-primary/10 transition-colors">
+          <span class="material-symbols-outlined text-[32px] text-on-surface-variant group-hover:text-primary transition-colors">upload_file</span>
         </div>
-        <div class="step-item" id="stepIndicator2">
-          <div class="step-dot">2</div>
-          <span class="step-label">Cài đặt</span>
+        <div class="text-center">
+          <p class="font-body-lg text-body-lg text-on-surface mb-1">
+            Kéo thả file vào đây hoặc <span class="text-primary underline decoration-primary/50 underline-offset-4">duyệt qua máy tính</span>
+          </p>
+          <p class="font-label-sm text-label-sm text-on-surface-variant">
+            Hỗ trợ MP4, MOV, AVI, MKV, WEBM (tối đa <span class="tabular">{{ max_upload_mb }} MB</span>)
+          </p>
         </div>
-        <div class="step-item" id="stepIndicator3">
-          <div class="step-dot">3</div>
-          <span class="step-label">Xử lý</span>
-        </div>
-      </div>
-    </div>
+      </label>
 
-    <form id="uploadForm" novalidate>
-      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-
-      <!-- ── STEP 1: Upload ── -->
-      <div class="hero-card p-4 p-md-5 mb-4">
-        <div class="d-flex align-items-center gap-3 mb-4">
-          <div class="step-section-number">1</div>
-          <div>
-            <h2 class="h5 fw-bold mb-0">Upload video</h2>
-            <p class="text-secondary small mb-0">Kéo thả hoặc chọn file để bắt đầu.</p>
+      <div id="filePreview"
+        class="hidden bg-surface-container-high rounded-2xl p-4 flex items-center justify-between border border-outline-variant/50">
+        <div class="flex items-center gap-4 min-w-0">
+          <div class="w-16 h-16 rounded-xl bg-background flex items-center justify-center border border-outline-variant/30 flex-shrink-0">
+            <span class="material-symbols-outlined text-on-surface-variant">movie</span>
           </div>
-        </div>
-
-        <!-- Dropzone -->
-        <div class="file-upload-wrapper mb-3" id="dropzoneLabel">
-          <input type="file" id="video" name="video" accept="video/*" required>
-          <div class="file-upload-wrapper-icon">
-            <i class="bi bi-cloud-arrow-up-fill"></i>
-          </div>
-          <p class="fw-bold mb-1" style="font-size:1.05rem;">Kéo thả video vào đây</p>
-          <p class="text-secondary small mb-3">hoặc click để chọn file từ máy tính</p>
-          <div class="d-flex flex-wrap justify-content-center gap-2">
-            <span class="file-meta-chip"><i class="bi bi-film"></i>MP4 / MOV / MKV</span>
-            <span class="file-meta-chip"><i class="bi bi-webcam"></i>WebM / AVI</span>
-            <span class="file-meta-chip"><i class="bi bi-hdd"></i>Tối đa 2 GB</span>
-          </div>
-        </div>
-
-        <!-- Large-file warning -->
-        <div id="largeFileWarning" class="d-none px-3 py-2 mb-3 d-flex align-items-center gap-2 small fw-semibold">
-          <i class="bi bi-exclamation-triangle-fill"></i>
-          File lớn — thời gian xử lý có thể lâu hơn bình thường.
-        </div>
-
-        <!-- Video preview (shown after file selected) -->
-        <div id="videoPreviewContainer" class="d-none">
-          <div class="position-relative rounded-4 overflow-hidden mb-3" style="background:rgba(0,0,0,0.4);">
-            <video id="videoPreview" class="w-100 d-block" controls
-              style="max-height:300px;border-radius:1rem;"></video>
-            <button type="button" id="clearVideoBtn"
-              class="btn btn-sm btn-danger position-absolute top-0 end-0 m-2 rounded-pill px-3">
-              <i class="bi bi-x-lg"></i>
-            </button>
-          </div>
-
-          <!-- File metadata chips -->
-          <div class="d-flex flex-wrap gap-2 mb-1" id="fileMetaRow">
-            <span class="file-meta-chip" id="metaName"><i class="bi bi-file-earmark-play"></i><span
-                id="metaNameText">—</span></span>
-            <span class="file-meta-chip" id="metaSize"><i class="bi bi-hdd"></i><span id="metaSizeText">—</span></span>
-            <span class="file-meta-chip" id="metaDuration"><i class="bi bi-clock"></i><span
-                id="metaDurationText">—</span></span>
-            <span class="est-badge" id="metaEst"><i class="bi bi-hourglass-split"></i><span id="metaEstText">Ước tính
-                —</span></span>
-          </div>
-        </div>
-      </div>
-
-      <!-- ── STEP 2: Settings (collapsible) ── -->
-      <div class="mb-4">
-        <div class="settings-panel" id="settingsPanel">
-          <div class="settings-panel-header" id="settingsToggle">
-            <div class="d-flex align-items-center gap-3">
-              <div class="step-section-number">2</div>
-              <div>
-                <p class="fw-bold mb-0 small">Cài đặt nâng cao</p>
-                <p class="text-secondary mb-0" style="font-size:0.75rem;">Tùy chọn — mặc định hoạt động tốt với hầu hết
-                  video.</p>
-              </div>
-            </div>
-            <i class="bi bi-chevron-down settings-chevron"></i>
-          </div>
-
-          <div class="settings-body" id="settingsBody" style="display:none;">
-            <div class="row g-3">
-
-              <!-- Translator -->
-              <div class="col-sm-6 col-lg-4">
-                <label for="translator_engine" class="form-label">
-                  <i class="bi bi-translate me-1 text-primary"></i>Dịch máy
-                </label>
-                <select class="form-select form-select-sm" id="translator_engine" name="translator_engine">
-                  <option value="marian" selected>MarianMT</option>
-                  <option value="openai">MarianMT-v2</option>
-                  <option value="gemini">Gemini</option>
-                </select>
-              </div>
-
-              <!-- Whisper -->
-              <div class="col-sm-6 col-lg-4">
-                <label for="whisper_model" class="form-label">
-                  <i class="bi bi-soundwave me-1 text-primary"></i>Mô hình Whisper
-                </label>
-                <select class="form-select form-select-sm" id="whisper_model" name="whisper_model">
-                  <option value="tiny">Tiny — nhanh nhất</option>
-                  <option value="base" selected>Base — cân bằng</option>
-                  <option value="small">Small</option>
-                  <option value="medium">Medium</option>
-                  <option value="large">Large — chính xác nhất</option>
-                </select>
-              </div>
-
-              <!-- TTS Engine -->
-              <div class="col-sm-6 col-lg-4">
-                <label for="tts_engine" class="form-label">
-                  <i class="bi bi-megaphone me-1 text-primary"></i>TTS Engine
-                </label>
-                <select class="form-select form-select-sm" id="tts_engine" name="tts_engine">
-                  <option value="edge-tts" selected>Edge-TTS — mượt mà</option>
-                  <option value="gtts">gTTS — đơn giản</option>
-                </select>
-              </div>
-
-              <!-- Voice -->
-              <div class="col-sm-6 col-lg-4">
-                <label for="tts_voice" class="form-label">
-                  <i class="bi bi-person me-1 text-primary"></i>Giọng đọc
-                </label>
-                <select class="form-select form-select-sm" id="tts_voice" name="tts_voice">
-                  <option value="female" selected>Nữ</option>
-                  <option value="male">Nam</option>
-                </select>
-              </div>
-
-              <!-- Subtitle -->
-              <div class="col-sm-6 col-lg-4">
-                <label for="subtitle_mode" class="form-label">
-                  <i class="bi bi-card-text me-1 text-primary"></i>Phụ đề
-                </label>
-                <select class="form-select form-select-sm" id="subtitle_mode" name="subtitle_mode">
-                  <option value="bilingual" selected>Song ngữ (EN + VI)</option>
-                  <option value="vi">Chỉ tiếng Việt</option>
-                  <option value="en">Chỉ tiếng Anh</option>
-                  <option value="none">Không phụ đề</option>
-                </select>
-              </div>
-
-              <!-- Device -->
-              <div class="col-sm-6 col-lg-4">
-                <label for="compute_device" class="form-label">
-                  <i class="bi bi-cpu me-1 text-primary"></i>Thiết bị xử lý
-                </label>
-                <select class="form-select form-select-sm" id="compute_device" name="compute_device">
-                  <option value="auto" selected>Tự động</option>
-                  <option value="cuda">CUDA (GPU)</option>
-                  <option value="cpu">CPU</option>
-                </select>
-              </div>
-
-              <!-- Volume -->
-              <div class="col-12">
-                <label for="original_volume" class="form-label d-flex align-items-center gap-2">
-                  <i class="bi bi-volume-down text-primary"></i>
-                  Âm lượng gốc
-                  <span class="file-meta-chip py-0 px-2"><span id="volumeValue">10</span>%</span>
-                </label>
-                <input type="range" class="form-range" id="original_volume" name="original_volume" min="0" max="50"
-                  value="10">
-                <div class="d-flex justify-content-between" style="font-size:0.72rem;color:var(--text-muted);">
-                  <span>0 — tắt hoàn toàn</span><span>50 — nghe rõ</span>
-                </div>
-              </div>
-
-              <!-- OpenAI fields -->
-              <div class="col-sm-6" id="openaiModelGroup" style="display:none">
-                <label for="openai_model" class="form-label">
-                  <i class="bi bi-stars me-1 text-primary"></i>
-                </label>
-                <input type="text" class="form-control form-control-sm" id="openai_model" name="openai_model"
-                  value="{{ default_openai_model }}" placeholder="gpt-4o-mini" disabled>
-              </div>
-              <div class="col-sm-6" id="openaiKeyGroup" style="display:none">
-             
-                <input type="password" class="form-control form-control-sm" id="openai_api_key" name="openai_api_key"
-                  placeholder="{% if openai_key_exists %}Dùng key từ server{% else %}sk-...{% endif %}" disabled>
-              </div>
-
-              <!-- Gemini fields -->
-              <div class="col-sm-6" id="geminiModelGroup" style="display:none">
-                <label for="gemini_model" class="form-label">
-                  <i class="bi bi-stars me-1 text-primary"></i>Model Gemini
-                </label>
-                <input type="text" class="form-control form-control-sm" id="gemini_model" name="gemini_model"
-                  value="{{ default_gemini_model }}" placeholder="gemini-3.6-flash" disabled>
-              </div>
-              <div class="col-sm-6" id="geminiKeyGroup" style="display:none">
-                <label for="gemini_api_key" class="form-label">
-                  <i class="bi bi-key me-1 text-primary"></i>Gemini API key
-                </label>
-                <input type="password" class="form-control form-control-sm" id="gemini_api_key" name="gemini_api_key"
-                  placeholder="{% if gemini_key_exists %}Dùng key từ server{% else %}AIza...{% endif %}" disabled>
-              </div>
-
+          <div class="flex flex-col min-w-0">
+            <span id="fileName" class="font-body-md text-body-md text-on-surface font-medium truncate"></span>
+            <div class="flex items-center gap-3 text-on-surface-variant mt-1">
+              <span class="flex items-center gap-1 font-label-sm text-label-sm">
+                <span class="material-symbols-outlined text-[14px]">timer</span><span id="fileDuration" class="tabular">--:--</span>
+              </span>
+              <span class="w-1 h-1 rounded-full bg-outline-variant"></span>
+              <span class="flex items-center gap-1 font-label-sm text-label-sm">
+                <span class="material-symbols-outlined text-[14px]">sd_storage</span><span id="fileSize" class="tabular"></span>
+              </span>
             </div>
           </div>
         </div>
+        <button type="button" id="clearFile"
+          class="text-error hover:bg-error/10 p-2 rounded-lg transition-colors flex items-center gap-2 font-label-sm text-label-sm uppercase tracking-wider">
+          <span class="material-symbols-outlined text-[18px]">delete</span><span class="hidden sm:inline">Xoá</span>
+        </button>
       </div>
+    </section>
 
-      <!-- ── STEP 3: Start ── -->
-      <div class="hero-card p-4 p-md-5">
-        <div class="d-flex align-items-center gap-3 mb-4">
-          <div class="step-section-number">3</div>
-          <div>
-            <h2 class="h5 fw-bold mb-0">Bắt đầu xử lý</h2>
-            <p class="text-secondary small mb-0">Nhấn khi đã sẵn sàng — pipeline sẽ chạy tự động.</p>
-          </div>
-        </div>
+    {# ── Bước 2: chất lượng ───────────────────────────── #}
+    <section class="bg-surface-container rounded-3xl p-lg border border-outline-variant/30 flex flex-col gap-md">
+      <h3 class="font-headline-md text-headline-md text-on-surface flex items-center gap-2">
+        <span class="bg-primary/20 text-primary w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm">2</span>
+        Chất lượng
+      </h3>
 
-        <div class="d-flex align-items-center gap-3 flex-wrap">
-          <button type="submit" id="submitBtn" class="btn btn-primary-gradient">
-            <span id="submitSpinner" class="spinner-border spinner-border-sm me-2 d-none" role="status"></span>
-            <i class="bi bi-play-fill me-1" id="submitIcon"></i>
-            <span id="submitLabel">Bắt đầu lồng tiếng</span>
-          </button>
-          <p class="text-secondary small mb-0">Upload trước, tinh chỉnh sau.</p>
-        </div>
-
-        <!-- Progress -->
-        <div id="progressCard" class="mt-4 d-none rounded-3 p-4">
-          <!-- Skeleton rows shown while starting -->
-          <div id="progressSkeleton">
-            <div class="skeleton processing-skeleton-row"
-              style="width:40%;height:14px;margin-bottom:.75rem;border-radius:.4rem;"></div>
-            <div class="skeleton processing-skeleton-row"
-              style="width:100%;height:10px;border-radius:2rem;margin-bottom:.6rem;"></div>
-            <div class="skeleton processing-skeleton-row" style="width:60%;height:10px;border-radius:.4rem;"></div>
-          </div>
-          <!-- Real progress (hidden until first tick) -->
-          <div id="progressReal" class="d-none">
-            <div class="d-flex justify-content-between align-items-center mb-2">
-              <span class="fw-semibold small">Đang xử lý</span>
-              <span class="file-meta-chip py-0 px-2" id="progressPctBadge">0%</span>
-            </div>
-            <div class="progress mb-2" style="height:.6rem;">
-              <div id="progressBar" class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar"
-                style="width:0%;background:linear-gradient(90deg,#3b82f6,#6366f1);">
-              </div>
-            </div>
-            <p id="progressText" class="text-secondary small mb-0">Đang chờ...</p>
-          </div>
-        </div>
-
-        <!-- Result -->
-        <div id="resultCard" class="mt-4 d-none rounded-3 p-4">
-          <div class="d-flex align-items-center gap-3 mb-3">
-            <span class="result-badge"><i class="bi bi-check-lg"></i>Hoàn tất!</span>
-            <p id="elapsedInfo" class="text-secondary small mb-0"></p>
-          </div>
-          <video id="resultVideo" class="w-100 rounded-3 mb-3" controls style="max-height:300px;"></video>
-          <div class="d-flex flex-wrap gap-2">
-            <a id="downloadVideo" href="#" class="btn btn-primary-gradient py-2 px-4" style="font-size:.9rem;">
-              <i class="bi bi-download me-1"></i>Tải video
-            </a>
-            <a id="downloadSrt" href="#" class="btn btn-outline-secondary rounded-3 py-2 px-4 d-none"
-              style="font-size:.9rem;">
-              <i class="bi bi-file-text me-1"></i>Phụ đề SRT
-            </a>
-          </div>
-        </div>
-
-      </div>
-    </form>
-  </div>
-
-  <!-- ════════════════ RIGHT: sidebar ════════════════ -->
-  <div class="col-lg-4">
-
-    <!-- Pipeline status pills -->
-    <div class="hero-card p-4 mb-4">
-      <p class="text-secondary small fw-semibold text-uppercase mb-3" style="letter-spacing:.07em;">
-        <i class="bi bi-cpu me-1"></i>Trạng thái pipeline
-      </p>
-      <div class="vstack gap-2">
-        <div class="pipeline-status-item">
-          <span class="pipeline-dot" style="background:#3b82f6;"></span>
-          <div class="flex-grow-1" style="min-width:0;">
-            <p class="fw-semibold mb-0 small">WhisperX</p>
-            <p class="text-secondary mb-0" style="font-size:.72rem;">Phân đoạn giọng nói</p>
-          </div>
-          <span class="pipeline-online-badge">Online</span>
-        </div>
-        <div class="pipeline-status-item">
-          <span class="pipeline-dot" style="background:#8b5cf6;"></span>
-          <div class="flex-grow-1" style="min-width:0;">
-            <p class="fw-semibold mb-0 small">MarianMT</p>
-            <p class="text-secondary mb-0" style="font-size:.72rem;">Dịch ngôn ngữ</p>
-          </div>
-          <span class="pipeline-online-badge">Online</span>
-        </div>
-        <div class="pipeline-status-item">
-          <span class="pipeline-dot" style="background:#06b6d4;"></span>
-          <div class="flex-grow-1" style="min-width:0;">
-            <p class="fw-semibold mb-0 small">TTS</p>
-            <p class="text-secondary mb-0" style="font-size:.72rem;">Tổng hợp giọng</p>
-          </div>
-          <span class="pipeline-online-badge">Online</span>
-        </div>
-      </div>
-    </div>
-
-    <!-- Recent outputs -->
-    <div class="hero-card p-4">
-      <div class="d-flex align-items-center justify-content-between mb-3">
-        <p class="text-secondary small fw-semibold text-uppercase mb-0" style="letter-spacing:.07em;">
-          <i class="bi bi-clock-history me-1"></i>Gần đây
-        </p>
-        {% if outputs %}
-        <span class="file-meta-chip py-0 px-2">{{ outputs|length }} video</span>
-        {% endif %}
-      </div>
-
-      {% if outputs %}
-      <div class="vstack gap-2">
-        {% for item in outputs %}
-        <div class="recent-item p-3">
-          <div class="d-flex align-items-center gap-3">
-            <div class="recent-thumb">
-              <i class="bi bi-play-fill" style="font-size:.9rem;"></i>
-            </div>
-            <div class="flex-grow-1" style="min-width:0;">
-              <p class="fw-semibold small mb-2 text-truncate" title="{{ item.video_name }}">
-                {{ item.video_name }}
-              </p>
-              <div class="d-flex gap-1 flex-wrap">
-                <a href="{{ item.video_url }}" target="_blank" class="btn btn-outline-primary rounded-pill py-0 px-2"
-                  style="font-size:.7rem;">
-                  <i class="bi bi-play-fill"></i> Xem
-                </a>
-                <a href="{{ item.video_url }}" download="{{ item.video_name }}"
-                  class="btn btn-outline-secondary rounded-pill py-0 px-2" style="font-size:.7rem;">
-                  <i class="bi bi-download"></i> Tải
-                </a>
-                {% if item.srt_url %}
-                <a href="{{ item.srt_url }}" download="{{ item.srt_name }}"
-                  class="btn btn-outline-secondary rounded-pill py-0 px-2" style="font-size:.7rem;">
-                  <i class="bi bi-file-text"></i> SRT
-                </a>
-                {% endif %}
-              </div>
-            </div>
-          </div>
-        </div>
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        {% set presets = [
+          ('fast', 'speed', 'Nhanh', 'Xong nhanh nhất', 'base', 'marian', ''),
+          ('balanced', 'balance', 'Cân bằng', 'Khuyên dùng', 'small', 'marian', 'MẶC ĐỊNH'),
+          ('best', 'diamond', 'Tốt nhất', 'Dịch bằng AI, chậm hơn', 'medium', 'gemini', '')
+        ] %}
+        {% for key, icon, name, desc, whisper, engine, badge in presets %}
+        <button type="button" class="preset relative overflow-hidden rounded-2xl p-4 flex flex-col items-start gap-2 transition-all text-left group
+            bg-surface-container-high border border-outline-variant/50 hover:border-primary/50"
+          data-preset="{{ key }}" data-whisper="{{ whisper }}" data-engine="{{ engine }}">
+          {% if badge %}
+          <div class="preset-badge absolute top-0 right-0 bg-primary text-on-primary font-label-sm text-[10px] px-2 py-0.5 rounded-bl-lg font-bold">{{ badge }}</div>
+          {% endif %}
+          <span class="material-symbols-outlined text-on-surface-variant transition-colors">{{ icon }}</span>
+          <span class="font-body-lg text-body-lg font-medium text-on-surface mt-2">{{ name }}</span>
+          <span class="font-label-sm text-label-sm text-on-surface-variant">{{ desc }}</span>
+        </button>
         {% endfor %}
       </div>
-      {% else %}
-      <div class="text-center py-4 text-secondary">
-        <i class="bi bi-inbox d-block mb-2 opacity-40" style="font-size:2.2rem;"></i>
-        <p class="small mb-0">Chưa có video nào.<br>Upload để bắt đầu.</p>
+
+      <button type="button" id="toggleAdvanced"
+        class="mt-2 text-primary flex items-center gap-1 font-label-sm text-label-sm hover:underline decoration-primary/50 underline-offset-4 self-start">
+        <span class="material-symbols-outlined text-[16px]">tune</span>Tuỳ chỉnh nâng cao
+      </button>
+
+      {# ── Tuỳ chọn thô: đúng tên trường backend đang đọc ── #}
+      <div id="advanced" class="hidden grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t border-outline-variant/40">
+        {% set field_class = "w-full bg-surface-container-high border border-outline-variant/50 text-on-surface font-body-md text-body-md rounded-xl px-3 py-2 focus:outline-none focus:border-primary" %}
+        {% set label_class = "font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider mb-1 block" %}
+
+        <div>
+          <label class="{{ label_class }}" for="whisper_model_select">Mô hình Whisper</label>
+          <select id="whisper_model_select" class="{{ field_class }}">
+            {% for value, text in [('tiny','Tiny — nhanh nhất'), ('base','Base'), ('small','Small'), ('medium','Medium'), ('large','Large — chính xác nhất')] %}
+            <option value="{{ value }}">{{ text }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div>
+          <label class="{{ label_class }}" for="translator_engine_select">Công cụ dịch</label>
+          <select id="translator_engine_select" class="{{ field_class }}">
+            <option value="marian">MarianMT — chạy offline, miễn phí</option>
+            <option value="gemini">Gemini{% if not gemini_key_exists %} — cần API key{% endif %}</option>
+            <option value="openai">OpenAI{% if not openai_key_exists %} — cần API key{% endif %}</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="{{ label_class }}" for="tts_engine">Giọng đọc</label>
+          <select name="tts_engine" id="tts_engine" class="{{ field_class }}">
+            <option value="edge-tts">Edge-TTS — tự nhiên hơn</option>
+            <option value="gtts">gTTS — đơn giản</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="{{ label_class }}" for="tts_voice">Chất giọng</label>
+          <select name="tts_voice" id="tts_voice" class="{{ field_class }}">
+            <option value="female">Nữ</option>
+            <option value="male">Nam</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="{{ label_class }}" for="subtitle_mode">Phụ đề</label>
+          <select name="subtitle_mode" id="subtitle_mode" class="{{ field_class }}">
+            <option value="bilingual">Song ngữ (EN + VI)</option>
+            <option value="vi">Chỉ tiếng Việt</option>
+            <option value="en">Chỉ tiếng Anh</option>
+            <option value="none">Không phụ đề</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="{{ label_class }}" for="compute_device">Thiết bị xử lý</label>
+          <select name="compute_device" id="compute_device" class="{{ field_class }}">
+            <option value="auto">Tự động</option>
+            <option value="cuda">CUDA (GPU)</option>
+            <option value="cpu">CPU</option>
+          </select>
+        </div>
+
+        <div class="sm:col-span-2">
+          <label class="{{ label_class }}" for="original_volume">
+            Âm lượng gốc — <span id="volumeValue" class="tabular text-primary">10</span>%
+          </label>
+          <input type="range" name="original_volume" id="original_volume" min="0" max="50" value="10"
+            class="w-full accent-primary">
+        </div>
+
+        <div id="geminiKeyGroup" class="hidden sm:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="{{ label_class }}" for="gemini_model">Model Gemini</label>
+            <input type="text" name="gemini_model" id="gemini_model" value="{{ default_gemini_model }}" class="{{ field_class }} tabular">
+          </div>
+          <div>
+            <label class="{{ label_class }}" for="gemini_api_key">Gemini API key</label>
+            <input type="password" name="gemini_api_key" id="gemini_api_key" class="{{ field_class }}"
+              placeholder="{% if gemini_key_exists %}Dùng key của hệ thống{% else %}AIza...{% endif %}">
+          </div>
+        </div>
+
+        <div id="openaiKeyGroup" class="hidden sm:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="{{ label_class }}" for="openai_model">Model OpenAI</label>
+            <input type="text" name="openai_model" id="openai_model" value="{{ default_openai_model }}" class="{{ field_class }} tabular">
+          </div>
+          <div>
+            <label class="{{ label_class }}" for="openai_api_key">OpenAI API key</label>
+            <input type="password" name="openai_api_key" id="openai_api_key" class="{{ field_class }}"
+              placeholder="{% if openai_key_exists %}Dùng key của hệ thống{% else %}sk-...{% endif %}">
+          </div>
+        </div>
       </div>
-      {% endif %}
+    </section>
+
+    {# ── Bước 3: bắt đầu ──────────────────────────────── #}
+    <div class="pt-4">
+      <button type="submit" id="submitBtn" disabled
+        class="w-full bg-primary text-on-primary font-headline-md text-headline-md font-bold py-5 rounded-2xl hover:bg-primary-fixed hover:-translate-y-0.5 transition-all flex items-center justify-center gap-3 disabled:opacity-40 disabled:hover:translate-y-0 disabled:cursor-not-allowed">
+        <span class="material-symbols-outlined filled text-[28px]">play_circle</span>
+        <span id="submitLabel">Bắt đầu lồng tiếng</span>
+      </button>
+      <p id="submitHint" class="text-center font-label-sm text-label-sm text-on-surface-variant mt-2">Chọn video trước</p>
     </div>
 
-  </div>
-</div>
+    {# ── Tiến trình ───────────────────────────────────── #}
+    <section id="progressCard" class="hidden bg-surface-container rounded-3xl p-lg border border-outline-variant/30 flex flex-col gap-md">
+      <div class="flex items-center justify-between">
+        <h3 class="font-headline-md text-headline-md text-on-surface">Đang xử lý</h3>
+        <span id="progressPct" class="tabular text-headline-md font-headline-md text-primary">0%</span>
+      </div>
 
+      <div class="grid grid-cols-2 sm:grid-cols-5 gap-2">
+        {% for key, label in [('extract','Tách audio'), ('transcribe','Nhận dạng'), ('translate','Dịch'), ('tts','Tổng hợp giọng'), ('compose','Ghép video')] %}
+        <div class="stage rounded-xl px-3 py-2 border border-outline-variant/50 bg-surface-container-high text-on-surface-variant font-label-sm text-label-sm text-center transition-colors"
+          data-stage="{{ key }}">{{ label }}</div>
+        {% endfor %}
+      </div>
+
+      <div class="w-full h-2 bg-surface-container-high rounded-full overflow-hidden">
+        <div id="progressBar" class="h-full bg-primary transition-all duration-500" style="width:0%"></div>
+      </div>
+      <p id="progressText" class="font-body-md text-body-md text-on-surface-variant">Đang gửi video...</p>
+
+      <button type="button" id="cancelBtn"
+        class="hidden self-start text-error hover:bg-error/10 px-3 py-2 rounded-lg font-label-sm text-label-sm uppercase tracking-wider">
+        Huỷ job
+      </button>
+    </section>
+
+    {# ── Kết quả ──────────────────────────────────────── #}
+    <section id="resultCard" class="hidden bg-surface-container rounded-3xl p-lg border border-primary/30 flex flex-col gap-md">
+      <h3 class="font-headline-md text-headline-md text-primary flex items-center gap-2">
+        <span class="material-symbols-outlined filled">check_circle</span>Xong rồi!
+      </h3>
+
+      <div id="fallbackNotice"
+        class="hidden rounded-xl border border-tertiary/40 bg-tertiary/10 px-4 py-3 font-body-md text-body-md text-tertiary"></div>
+
+      <video id="resultVideo" controls class="w-full rounded-2xl bg-background max-h-[420px]"></video>
+
+      <div id="timingBreakdown" class="hidden flex-col gap-2">
+        <p class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Thời gian từng bước</p>
+        <div id="timingBar" class="w-full h-3 rounded-full overflow-hidden flex bg-surface-container-high"></div>
+        <div id="timingLegend" class="flex flex-wrap gap-x-4 gap-y-1 font-label-sm text-label-sm text-on-surface-variant"></div>
+      </div>
+
+      <div class="flex flex-wrap gap-3">
+        <a id="downloadVideo" href="#" download
+          class="bg-primary text-on-primary font-label-sm text-label-sm uppercase tracking-wider px-4 py-2 rounded-full font-bold flex items-center gap-2">
+          <span class="material-symbols-outlined text-[18px]">download</span>Tải video
+        </a>
+        <a id="downloadSrt" href="#" download
+          class="hidden border border-outline-variant text-on-surface font-label-sm text-label-sm uppercase tracking-wider px-4 py-2 rounded-full flex items-center gap-2">
+          <span class="material-symbols-outlined text-[18px]">subtitles</span>Tải phụ đề
+        </a>
+        <button type="button" id="againBtn"
+          class="border border-outline-variant text-on-surface-variant font-label-sm text-label-sm uppercase tracking-wider px-4 py-2 rounded-full">
+          Làm video khác
+        </button>
+      </div>
+    </section>
+
+    {# ── Lỗi ──────────────────────────────────────────── #}
+    <section id="errorCard" class="hidden bg-error-container/20 rounded-3xl p-lg border border-error/50 flex flex-col gap-3">
+      <h3 class="font-headline-md text-headline-md text-error flex items-center gap-2">
+        <span class="material-symbols-outlined">error</span>Xử lý thất bại
+      </h3>
+      <p id="errorMessage" class="font-body-md text-body-md text-on-error-container"></p>
+      <button type="button" id="retryBtn"
+        class="self-start border border-error/60 text-error font-label-sm text-label-sm uppercase tracking-wider px-4 py-2 rounded-full">
+        Thử lại
+      </button>
+    </section>
+  </div>
+
+  {# ── Cột phải: tóm tắt ──────────────────────────────── #}
+  <div class="lg:col-span-4">
+    <div class="sticky top-[88px] bg-surface-container-low rounded-3xl p-lg border border-outline-variant/30 flex flex-col gap-5">
+      <div class="flex items-center gap-3 pb-4 border-b border-outline-variant/50">
+        <div class="w-10 h-10 rounded-xl bg-primary/15 flex items-center justify-center">
+          <span class="material-symbols-outlined text-primary">receipt_long</span>
+        </div>
+        <div>
+          <h4 class="font-body-lg text-body-lg font-medium text-on-surface">Tổng quan</h4>
+          <p class="font-label-sm text-label-sm text-on-surface-variant">Chi tiết tác vụ</p>
+        </div>
+      </div>
+
+      {% macro stat_row(icon, label, value, id='') %}
+      <div class="flex items-center justify-between gap-3">
+        <span class="flex items-center gap-2 font-body-md text-body-md text-on-surface-variant">
+          <span class="material-symbols-outlined text-[18px]">{{ icon }}</span>{{ label }}
+        </span>
+        <span {% if id %}id="{{ id }}" {% endif %}class="tabular text-on-surface">{{ value }}</span>
+      </div>
+      {% endmacro %}
+
+      {{ stat_row('hourglass_top', 'Thời gian', '—', 'estTime') }}
+      {{ stat_row('payments', 'Chi phí', '—', 'estCost') }}
+      {% set jobs_left = [usage.jobs.limit - usage.jobs.used, 0] | max %}
+      {{ stat_row('bolt', 'Lượt còn lại', jobs_left ~ '/' ~ usage.jobs.limit) }}
+
+      <div class="w-full h-1.5 bg-surface-container-high rounded-full overflow-hidden">
+        {% set pct = (usage.jobs.used / usage.jobs.limit * 100) if usage.jobs.limit else 0 %}
+        <div class="h-full rounded-full {% if pct >= 100 %}bg-error{% elif pct >= 80 %}bg-tertiary{% else %}bg-primary{% endif %}"
+          style="width: {{ [pct, 100] | min }}%"></div>
+      </div>
+
+      <p class="font-label-sm text-label-sm text-on-surface-variant leading-relaxed">
+        Mỗi lần bấm bắt đầu đều tính một lượt, kể cả khi job thất bại.
+      </p>
+
+      <div id="engineHint"
+        class="hidden rounded-xl border border-tertiary/40 bg-tertiary/10 px-3 py-2 font-label-sm text-label-sm text-tertiary"></div>
+    </div>
+  </div>
+</form>
+
+{% if outputs %}
+<section class="mt-xl">
+  <h3 class="font-headline-md text-headline-md text-on-surface mb-md">Gần đây</h3>
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+    {% for item in outputs %}
+    <div class="bg-surface-container rounded-2xl border border-outline-variant/30 p-4 flex flex-col gap-2">
+      <span class="font-body-md text-body-md text-on-surface truncate" title="{{ item.video_name }}">{{ item.video_name }}</span>
+      <div class="flex gap-3">
+        <a href="{{ item.video_url }}" class="text-primary font-label-sm text-label-sm uppercase tracking-wider">Xem</a>
+        {% if item.srt_url %}
+        <a href="{{ item.srt_url }}" class="text-on-surface-variant font-label-sm text-label-sm uppercase tracking-wider">Phụ đề</a>
+        {% endif %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</section>
+{% endif %}
 {% endblock %}
 
 {% block scripts %}
 <script>
   (function () {
-    /* ── Settings panel toggle ── */
-    const settingsPanel = document.getElementById('settingsPanel');
-    const settingsToggle = document.getElementById('settingsToggle');
-    const settingsBody = document.getElementById('settingsBody');
+    const form = document.getElementById("uploadForm");
+    const fileInput = document.getElementById("video");
+    const dropzone = document.getElementById("dropzone");
+    const preview = document.getElementById("filePreview");
+    const submitBtn = document.getElementById("submitBtn");
+    const submitHint = document.getElementById("submitHint");
+    const progressCard = document.getElementById("progressCard");
+    const resultCard = document.getElementById("resultCard");
+    const errorCard = document.getElementById("errorCard");
+    const engineField = document.getElementById("translator_engine");
+    const whisperField = document.getElementById("whisper_model");
+    const engineSelect = document.getElementById("translator_engine_select");
+    const whisperSelect = document.getElementById("whisper_model_select");
 
-    settingsToggle.addEventListener('click', () => {
-      const open = settingsPanel.classList.toggle('open');
-      settingsBody.style.display = open ? 'block' : 'none';
-      // Advance step indicator to step 2 when user opens settings
-      if (open) setStep(2);
+    let poller = null;
+    let currentJob = null;
+
+    // ── Chọn file ────────────────────────────────────────
+    function humanSize(bytes) {
+      const mb = bytes / 1024 / 1024;
+      return mb >= 1024 ? (mb / 1024).toFixed(2) + " GB" : mb.toFixed(1) + " MB";
+    }
+
+    function showFile(file) {
+      document.getElementById("fileName").textContent = file.name;
+      document.getElementById("fileSize").textContent = humanSize(file.size);
+      preview.classList.remove("hidden");
+      dropzone.classList.add("hidden");
+      submitBtn.disabled = false;
+      submitHint.textContent = "";
+
+      // Đọc thời lượng để ước tính, không cần gọi server
+      const probe = document.createElement("video");
+      probe.preload = "metadata";
+      probe.onloadedmetadata = function () {
+        const d = Math.round(probe.duration);
+        document.getElementById("fileDuration").textContent =
+          String(Math.floor(d / 60)).padStart(2, "0") + ":" + String(d % 60).padStart(2, "0");
+        estimate(d);
+        URL.revokeObjectURL(probe.src);
+      };
+      probe.src = URL.createObjectURL(file);
+    }
+
+    // Đo thật trên T4: video 86 giây mất ~20 giây với MarianMT.
+    function estimate(durationSec) {
+      if (!durationSec) return;
+      const engine = engineField.value;
+      const factor = engine === "marian" ? 0.24 : 0.9;
+      const seconds = Math.max(10, Math.round(durationSec * factor));
+      document.getElementById("estTime").textContent = "~" + seconds + " giây";
+      document.getElementById("estCost").textContent = "~$" + (seconds * 0.000164).toFixed(3).replace(".", ",");
+    }
+
+    fileInput.addEventListener("change", function () {
+      if (fileInput.files.length) showFile(fileInput.files[0]);
     });
 
-    /* ── Step indicator ── */
-    function setStep(n) {
-      [1, 2, 3].forEach(i => {
-        const el = document.getElementById('stepIndicator' + i);
-        el.classList.remove('active', 'done');
-        if (i < n) el.classList.add('done');
-        if (i === n) el.classList.add('active');
+    document.getElementById("clearFile").addEventListener("click", function () {
+      fileInput.value = "";
+      preview.classList.add("hidden");
+      dropzone.classList.remove("hidden");
+      submitBtn.disabled = true;
+      submitHint.textContent = "Chọn video trước";
+    });
+
+    ["dragover", "dragenter"].forEach(function (evt) {
+      dropzone.addEventListener(evt, function (e) { e.preventDefault(); dropzone.classList.add("border-primary"); });
+    });
+    ["dragleave", "drop"].forEach(function (evt) {
+      dropzone.addEventListener(evt, function (e) { e.preventDefault(); dropzone.classList.remove("border-primary"); });
+    });
+    dropzone.addEventListener("drop", function (e) {
+      if (e.dataTransfer.files.length) {
+        fileInput.files = e.dataTransfer.files;
+        showFile(e.dataTransfer.files[0]);
+      }
+    });
+
+    // ── Preset và tuỳ chỉnh nâng cao ─────────────────────
+    function paintPresets(active) {
+      document.querySelectorAll(".preset").forEach(function (btn) {
+        const on = btn.dataset.preset === active;
+        btn.classList.toggle("bg-primary/10", on);
+        btn.classList.toggle("border-primary", on);
+        btn.classList.toggle("border-2", on);
+        btn.classList.toggle("bg-surface-container-high", !on);
+        btn.querySelector("span.material-symbols-outlined").classList.toggle("text-primary", on);
       });
     }
 
-    /* ── Drag-and-drop on dropzone ── */
-    const dropzone = document.getElementById('dropzoneLabel');
-    dropzone.addEventListener('dragover', e => { e.preventDefault(); dropzone.classList.add('dragover'); });
-    dropzone.addEventListener('dragleave', () => dropzone.classList.remove('dragover'));
-    dropzone.addEventListener('drop', e => {
-      e.preventDefault();
-      dropzone.classList.remove('dragover');
-      const file = e.dataTransfer.files[0];
-      if (file) setFile(file);
-    });
-
-    /* ── File selection ── */
-    const videoInput = document.getElementById('video');
-    const videoPreviewContainer = document.getElementById('videoPreviewContainer');
-    const videoPreview = document.getElementById('videoPreview');
-    const clearVideoBtn = document.getElementById('clearVideoBtn');
-    const largeFileWarning = document.getElementById('largeFileWarning');
-    const metaNameText = document.getElementById('metaNameText');
-    const metaSizeText = document.getElementById('metaSizeText');
-    const metaDurationText = document.getElementById('metaDurationText');
-    const metaEstText = document.getElementById('metaEstText');
-
-    function fmtSize(bytes) {
-      if (bytes >= 1073741824) return (bytes / 1073741824).toFixed(1) + ' GB';
-      return (bytes / 1048576).toFixed(0) + ' MB';
-    }
-    function fmtDuration(s) {
-      if (!s || !isFinite(s)) return '—';
-      const m = Math.floor(s / 60), sec = Math.floor(s % 60);
-      return m + ':' + String(sec).padStart(2, '0');
-    }
-    function estimateMinutes(bytes, duration) {
-      // rough heuristic: ~1 min processing per 150 MB or per 5 min of video
-      const byBytes = bytes / (150 * 1048576);
-      const bySecs = duration > 0 ? duration / 300 : 0;
-      return Math.max(1, Math.ceil(Math.max(byBytes, bySecs)));
-    }
-
-    function setFile(file) {
-      // Sync to hidden input via DataTransfer
-      const dt = new DataTransfer();
-      dt.items.add(file);
-      videoInput.files = dt.files;
-
-      const url = URL.createObjectURL(file);
-      videoPreview.src = url;
-      videoPreviewContainer.classList.remove('d-none');
-      dropzone.classList.add('d-none');
-
-      metaNameText.textContent = file.name.length > 28 ? file.name.slice(0, 26) + '…' : file.name;
-      metaSizeText.textContent = fmtSize(file.size);
-      largeFileWarning.classList.toggle('d-none', file.size < 1.2 * 1073741824);
-
-      videoPreview.onloadedmetadata = () => {
-        const dur = videoPreview.duration;
-        metaDurationText.textContent = fmtDuration(dur);
-        const est = estimateMinutes(file.size, dur);
-        metaEstText.textContent = 'Ước tính ~' + est + ' phút';
-      };
-
-      setStep(2);
-    }
-
-    videoInput.addEventListener('change', function () {
-      if (this.files[0]) setFile(this.files[0]);
-      else clearFile();
-    });
-
-    function clearFile() {
-      videoInput.value = '';
-      videoPreview.src = '';
-      videoPreviewContainer.classList.add('d-none');
-      dropzone.classList.remove('d-none');
-      largeFileWarning.classList.add('d-none');
-      setStep(1);
-    }
-    clearVideoBtn.addEventListener('click', clearFile);
-
-    /* ── Volume display ── */
-    document.getElementById('original_volume').addEventListener('input', function () {
-      document.getElementById('volumeValue').textContent = this.value;
-    });
-
-    /* ── OpenAI / Gemini fields toggle ── */
-    const translatorEngine = document.getElementById('translator_engine');
-    const openaiModel = document.getElementById('openai_model');
-    const openaiApiKey = document.getElementById('openai_api_key');
-    const geminiModel = document.getElementById('gemini_model');
-    const geminiApiKey = document.getElementById('gemini_api_key');
-    const geminiModelGroup = document.getElementById('geminiModelGroup');
-    const geminiKeyGroup = document.getElementById('geminiKeyGroup');
-
-    function syncTranslatorFields() {
-      const on = translatorEngine.value === 'openai';
-      openaiModel.disabled = !on;
-      openaiApiKey.disabled = !on;
-      openaiModel.classList.toggle('opacity-50', !on);
-      openaiApiKey.classList.toggle('opacity-50', !on);
-
-      const useGemini = translatorEngine.value === 'gemini';
-      geminiModel.disabled = !useGemini;
-      geminiApiKey.disabled = !useGemini;
-      geminiModelGroup.style.display = useGemini ? '' : 'none';
-      geminiKeyGroup.style.display = useGemini ? '' : 'none';
-    }
-    translatorEngine.addEventListener('change', syncTranslatorFields);
-    syncTranslatorFields();
-
-    /* ── Form submit & polling ── */
-    const submitBtn = document.getElementById('submitBtn');
-    const submitSpinner = document.getElementById('submitSpinner');
-    const submitIcon = document.getElementById('submitIcon');
-    const submitLabel = document.getElementById('submitLabel');
-    const progressCard = document.getElementById('progressCard');
-    const progressSkel = document.getElementById('progressSkeleton');
-    const progressReal = document.getElementById('progressReal');
-    const progressBar = document.getElementById('progressBar');
-    const progressText = document.getElementById('progressText');
-    const progressPctBadge = document.getElementById('progressPctBadge');
-    const resultCard = document.getElementById('resultCard');
-    const resultVideo = document.getElementById('resultVideo');
-    const downloadVideo = document.getElementById('downloadVideo');
-    const downloadSrt = document.getElementById('downloadSrt');
-    const elapsedInfo = document.getElementById('elapsedInfo');
-
-    function setSubmitting(on) {
-      submitBtn.disabled = on;
-      submitSpinner.classList.toggle('d-none', !on);
-      submitIcon.classList.toggle('d-none', on);
-      submitLabel.textContent = on ? 'Đang xử lý…' : 'Bắt đầu lồng tiếng';
-    }
-
-    function updateProgress(pct, message) {
-      const v = Number(pct) || 0;
-      progressCard.classList.remove('d-none');
-      if (v > 1) {
-        progressSkel.classList.add('d-none');
-        progressReal.classList.remove('d-none');
-      }
-      progressBar.style.width = v + '%';
-      progressPctBadge.textContent = v + '%';
-      progressText.textContent = message || 'Đang xử lý...';
-    }
-
-    function showResult(result) {
-      if (!result || !result.video_url) return;
-      setStep(3);
-      resultCard.classList.remove('d-none');
-      resultVideo.src = result.video_url;
-      resultVideo.load();
-      downloadVideo.href = result.video_url;
-      downloadVideo.download = result.video_name || 'output.mp4';
-      if (result.srt_url) {
-        downloadSrt.classList.remove('d-none');
-        downloadSrt.href = result.srt_url;
-        downloadSrt.download = result.srt_name || 'subtitle.srt';
+    function syncEngineHint() {
+      const hint = document.getElementById("engineHint");
+      const gemini = engineField.value === "gemini";
+      const openai = engineField.value === "openai";
+      document.getElementById("geminiKeyGroup").classList.toggle("hidden", !gemini);
+      document.getElementById("openaiKeyGroup").classList.toggle("hidden", !openai);
+      if (gemini || openai) {
+        hint.textContent = "Dịch bằng API bên ngoài nên chậm hơn MarianMT nhiều lần. Nếu API lỗi, hệ thống tự chuyển về MarianMT.";
+        hint.classList.remove("hidden");
       } else {
-        downloadSrt.classList.add('d-none');
+        hint.classList.add("hidden");
       }
-      elapsedInfo.textContent = 'Thời gian xử lý: ' + (result.elapsed_seconds || 0) + 's';
     }
 
-    function pollProgress(jobId) {
-      const timer = setInterval(async () => {
-        try {
-          const res = await fetch('/api/progress/' + jobId);
-          const data = await res.json();
-          if (!res.ok) throw new Error(data.error || 'Không lấy được tiến trình.');
-          updateProgress(data.progress, data.message);
-          if (data.status === 'done') {
-            clearInterval(timer);
-            setSubmitting(false);
-            showResult(data.result);
-          }
-          if (data.status === 'failed') {
-            clearInterval(timer);
-            setSubmitting(false);
-            alert(data.message || 'Xử lý thất bại.');
-          }
-        } catch (err) {
-          clearInterval(timer);
-          setSubmitting(false);
-          alert(err.message || 'Có lỗi khi theo dõi tiến trình.');
-        }
-      }, 1200);
-    }
-
-    document.getElementById('uploadForm').addEventListener('submit', async (e) => {
-      e.preventDefault();
-      setSubmitting(true);
-      resultCard.classList.add('d-none');
-      progressSkel.classList.remove('d-none');
-      progressReal.classList.add('d-none');
-      updateProgress(1, 'Đang gửi video...');
-      try {
-        const res = await fetch('/api/upload', { method: 'POST', body: new FormData(e.target) });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || 'Upload thất bại.');
-        pollProgress(data.job_id);
-      } catch (err) {
-        setSubmitting(false);
-        alert(err.message || 'Không thể tải video lên.');
-      }
+    document.querySelectorAll(".preset").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        engineField.value = btn.dataset.engine;
+        whisperField.value = btn.dataset.whisper;
+        engineSelect.value = btn.dataset.engine;
+        whisperSelect.value = btn.dataset.whisper;
+        paintPresets(btn.dataset.preset);
+        syncEngineHint();
+        if (fileInput.files.length) fileInput.dispatchEvent(new Event("change"));
+      });
     });
+
+    [engineSelect, whisperSelect].forEach(function (sel) {
+      sel.addEventListener("change", function () {
+        engineField.value = engineSelect.value;
+        whisperField.value = whisperSelect.value;
+        paintPresets(null);   // đã lệch khỏi preset
+        syncEngineHint();
+      });
+    });
+
+    document.getElementById("toggleAdvanced").addEventListener("click", function () {
+      document.getElementById("advanced").classList.toggle("hidden");
+    });
+
+    document.getElementById("original_volume").addEventListener("input", function (e) {
+      document.getElementById("volumeValue").textContent = e.target.value;
+    });
+
+    // ── Tiến trình ───────────────────────────────────────
+    const STAGE_BY_PERCENT = [
+      [10, "extract"], [25, "transcribe"], [45, "translate"], [70, "tts"], [88, "compose"]
+    ];
+
+    function paintStages(percent) {
+      document.querySelectorAll(".stage").forEach(function (el) {
+        const idx = STAGE_BY_PERCENT.findIndex(function (s) { return s[1] === el.dataset.stage; });
+        const start = STAGE_BY_PERCENT[idx][0];
+        const next = idx + 1 < STAGE_BY_PERCENT.length ? STAGE_BY_PERCENT[idx + 1][0] : 101;
+        const done = percent >= next;
+        const active = percent >= start && percent < next;
+        el.classList.toggle("border-primary", active);
+        el.classList.toggle("text-primary", active || done);
+        el.classList.toggle("bg-primary/10", active);
+      });
+    }
+
+    function updateProgress(percent, message) {
+      const value = Math.max(0, Math.min(100, percent || 0));
+      document.getElementById("progressBar").style.width = value + "%";
+      document.getElementById("progressPct").textContent = value + "%";
+      document.getElementById("progressText").textContent = message || "Đang xử lý...";
+      paintStages(value);
+    }
+
+    const TIMING_LABELS = {
+      extract: ["Tách audio", "#8c947d"], transcribe: ["Nhận dạng", "#bdfd5d"],
+      translate: ["Dịch", "#9bd93c"], tts: ["Tổng hợp giọng", "#ffbfac"], compose: ["Ghép video", "#c2c7cb"]
+    };
+
+    function showTimings(timings) {
+      const entries = Object.keys(TIMING_LABELS)
+        .filter(function (k) { return timings && timings[k]; })
+        .map(function (k) { return [k, timings[k]]; });
+      if (!entries.length) return;
+      const total = entries.reduce(function (sum, e) { return sum + e[1]; }, 0);
+      document.getElementById("timingBar").innerHTML = entries.map(function (e) {
+        return '<div style="width:' + (e[1] / total * 100) + '%;background:' + TIMING_LABELS[e[0]][1] + '"></div>';
+      }).join("");
+      document.getElementById("timingLegend").innerHTML = entries.map(function (e) {
+        return '<span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full" style="background:' +
+          TIMING_LABELS[e[0]][1] + '"></span>' + TIMING_LABELS[e[0]][0] +
+          ' <span class="tabular">' + e[1].toFixed(1) + 's</span></span>';
+      }).join("");
+      document.getElementById("timingBreakdown").classList.remove("hidden");
+      document.getElementById("timingBreakdown").classList.add("flex");
+    }
+
+    function finish(data) {
+      clearInterval(poller);
+      progressCard.classList.add("hidden");
+      if (data.status === "done" && data.result) {
+        document.getElementById("resultVideo").src = data.result.video_url;
+        document.getElementById("downloadVideo").href = data.result.video_url;
+        document.getElementById("downloadVideo").download = data.result.video_name || "video.mp4";
+        const srt = document.getElementById("downloadSrt");
+        if (data.result.srt_url) {
+          srt.href = data.result.srt_url;
+          srt.download = data.result.srt_name || "phude.srt";
+          srt.classList.remove("hidden");
+        }
+        if (data.fallback_used) {
+          const notice = document.getElementById("fallbackNotice");
+          notice.textContent = data.translator_engine + " gặp lỗi nên hệ thống đã tự chuyển sang MarianMT. " +
+            "Chất lượng dịch có thể khác với lựa chọn ban đầu.";
+          notice.classList.remove("hidden");
+        }
+        showTimings(data.timings);
+        resultCard.classList.remove("hidden");
+      } else {
+        document.getElementById("errorMessage").textContent = data.message || "Không rõ nguyên nhân.";
+        errorCard.classList.remove("hidden");
+      }
+    }
+
+    function poll(jobId) {
+      poller = setInterval(async function () {
+        try {
+          const res = await fetch("/api/progress/" + jobId);
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.error || "Không lấy được tiến trình.");
+          if (data.status === "queued" && typeof data.queue_position === "number") {
+            updateProgress(data.progress, data.queue_position > 0
+              ? "Đang chờ tới lượt — còn " + data.queue_position + " job trước bạn"
+              : "Đang chờ container GPU khởi động...");
+          } else {
+            updateProgress(data.progress, data.message);
+          }
+          if (["done", "failed", "cancelled", "interrupted"].indexOf(data.status) !== -1) finish(data);
+        } catch (err) {
+          clearInterval(poller);
+          document.getElementById("errorMessage").textContent = err.message;
+          errorCard.classList.remove("hidden");
+          progressCard.classList.add("hidden");
+        }
+      }, 1500);
+    }
+
+    // ── Gửi form ─────────────────────────────────────────
+    form.addEventListener("submit", function (e) {
+      e.preventDefault();
+      submitBtn.disabled = true;
+      document.getElementById("submitLabel").textContent = "Đang tải lên...";
+      errorCard.classList.add("hidden");
+      resultCard.classList.add("hidden");
+      progressCard.classList.remove("hidden");
+      updateProgress(1, "Đang tải video lên...");
+
+      // XHR để có tiến trình upload thật; fetch() không làm được việc này.
+      const xhr = new XMLHttpRequest();
+      xhr.open("POST", "/api/upload");
+      xhr.upload.addEventListener("progress", function (evt) {
+        if (evt.lengthComputable) {
+          const pct = Math.round(evt.loaded / evt.total * 100);
+          document.getElementById("progressText").textContent = "Đang tải video lên... " + pct + "%";
+        }
+      });
+      xhr.onload = function () {
+        let data = {};
+        try { data = JSON.parse(xhr.responseText); } catch (err) { /* trả về không phải JSON */ }
+        if (xhr.status === 202 && data.job_id) {
+          currentJob = data.job_id;
+          updateProgress(1, "Đã nhận video, đang khởi tạo tác vụ...");
+          poll(data.job_id);
+        } else {
+          progressCard.classList.add("hidden");
+          document.getElementById("errorMessage").textContent = data.error || "Không tải lên được video.";
+          errorCard.classList.remove("hidden");
+          submitBtn.disabled = false;
+          document.getElementById("submitLabel").textContent = "Bắt đầu lồng tiếng";
+        }
+      };
+      xhr.onerror = function () {
+        progressCard.classList.add("hidden");
+        document.getElementById("errorMessage").textContent = "Mất kết nối khi tải video lên.";
+        errorCard.classList.remove("hidden");
+        submitBtn.disabled = false;
+        document.getElementById("submitLabel").textContent = "Bắt đầu lồng tiếng";
+      };
+      xhr.send(new FormData(form));
+    });
+
+    document.getElementById("againBtn").addEventListener("click", function () { window.location.reload(); });
+    document.getElementById("retryBtn").addEventListener("click", function () { window.location.reload(); });
+
+    paintPresets("balanced");
+    syncEngineHint();
   })();
 </script>
 {% endblock %}
