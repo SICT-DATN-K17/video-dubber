@@ -65,3 +65,6 @@ F5-TTS-Vietnamese/
 /*.mkv
 /*.webm
 /*.srt
+
+# Ban thiet ke tu Stitch (mockup tinh, khong deploy)
+design/

@@ -240,6 +240,9 @@ của tiến trình web, không đụng gì tới Modal.
 - [x] **Độ trễ:** `faster-whisper` làm backend mặc định, openai-whisper giữ làm dự phòng — nhanh hơn 1,6–1,95×
 - [x] `timeout=` cho mọi lệnh ffmpeg/ffprobe qua `utils/proc.py` (`FFMPEG_TIMEOUT`, `FFPROBE_TIMEOUT`)
 - [x] Retry có backoff cho batch dịch OpenAI/Gemini (`LLM_MAX_RETRIES`), chỉ thử lại lỗi tạm thời
+- [x] **Tự lùi về MarianMT** khi API dịch hỏng — một lần Gemini đổi model không còn làm hỏng cả job
+- [x] **Đo thời gian từng bước** (`extract/transcribe/translate/tts/compose_sec`) — thay việc bấm giờ thủ công
+- [x] **Vị trí hàng đợi** trong `/api/progress` khi job đang chờ container GPU
 - [ ] Đẩy output lên R2 + presigned URL (hiện đang dùng chung Volume, đủ dùng nhưng mọi lượt xem đều qua container web)
 - [x] **Đã deploy và kiểm chứng thật** — https://pnam1802--video-dubber-web.modal.run
 - [x] Đồng bộ Volume hai chiều: web `commit()` sau khi lưu upload, `reload()` khi phục vụ file kết quả (`app/storage.py`)

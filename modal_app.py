@@ -43,6 +43,7 @@ image = (
             "!.env.example",
             ".git/**",
             "data/**",
+            "design/**",   # mockup tu Stitch, khong can trong image
             "**/__pycache__/**",
             "**/*.pyc",
             "*.mp4",

@@ -14,6 +14,17 @@ from app.extensions import db
 from app.models import Job, JobStatus, Role, User
 from app.permissions import require_admin
 from app.quota import get_usage
+from config.settings import (
+    GEMINI_API_KEY,
+    GEMINI_MODEL,
+    JOB_RUNNER,
+    OPENAI_API_KEY,
+    OPENAI_MODEL,
+    QUOTA_GPU_SECONDS_PER_DAY,
+    QUOTA_JOBS_PER_DAY,
+    QUOTA_STORAGE_MB,
+    WHISPER_BACKEND,
+)
 
 bp = Blueprint("admin", __name__, url_prefix="/api")
 
@@ -81,6 +92,33 @@ def update_user(user_id: int):
     return jsonify({"id": user.id, "username": user.username, "role": user.role, "is_active": user.is_active})
 
 
+def _key_status(key: str) -> dict:
+    """Bao trang thai key, KHONG bao gio tra ve gia tri key."""
+    return {"configured": bool(key), "length": len(key) if key else 0}
+
+
+@bp.get("/admin/config")
+@login_required
+@require_admin
+def config_status():
+    """Cau hinh dang chay: engine nao san sang, model nao, han muc bao nhieu."""
+    return jsonify(
+        {
+            "engines": {
+                "gemini": {**_key_status(GEMINI_API_KEY), "model": GEMINI_MODEL},
+                "openai": {**_key_status(OPENAI_API_KEY), "model": OPENAI_MODEL},
+                "marian": {"configured": True, "model": "local", "length": 0},
+            },
+            "runtime": {"job_runner": JOB_RUNNER, "whisper_backend": WHISPER_BACKEND},
+            "quotas": {
+                "jobs_per_day": QUOTA_JOBS_PER_DAY,
+                "gpu_seconds_per_day": QUOTA_GPU_SECONDS_PER_DAY,
+                "storage_mb": QUOTA_STORAGE_MB,
+            },
+        }
+    )
+
+
 @bp.get("/admin/stats")
 @login_required
 @require_admin
@@ -130,6 +168,61 @@ def stats():
         .all()
     )
 
+    # Suc khoe tung engine: engine nao dang fail nhieu thi biet ngay,
+    # vi du key het han hoac model bi ngung cap.
+    engine_health: dict[str, dict[str, int]] = {}
+    for engine, status, count in (
+        db.session.query(Job.translator_engine, Job.status, func.count(Job.id))
+        .filter(Job.translator_engine.isnot(None))
+        .group_by(Job.translator_engine, Job.status)
+        .all()
+    ):
+        row = engine_health.setdefault(engine, {"total": 0, "done": 0, "failed": 0})
+        row["total"] += count
+        if status == JobStatus.DONE:
+            row["done"] += count
+        elif status == JobStatus.FAILED:
+            row["failed"] += count
+
+    # Thoi gian dich trung binh theo engine — so sanh MarianMT voi Gemini.
+    engine_speed = {
+        engine: round(float(avg or 0), 1)
+        for engine, avg in db.session.query(
+            func.coalesce(Job.translator_actual, Job.translator_engine),
+            func.avg(Job.translate_sec),
+        )
+        .filter(Job.translate_sec.isnot(None))
+        .group_by(func.coalesce(Job.translator_actual, Job.translator_engine))
+        .all()
+        if engine
+    }
+
+    # Thoi gian trung binh tung buoc — cho biet nut that nam o dau.
+    step_avgs = db.session.query(
+        func.avg(Job.extract_sec),
+        func.avg(Job.transcribe_sec),
+        func.avg(Job.translate_sec),
+        func.avg(Job.tts_sec),
+        func.avg(Job.compose_sec),
+    ).one()
+    avg_steps = {
+        key: round(float(value or 0), 1)
+        for key, value in zip(
+            ("extract", "transcribe", "translate", "tts", "compose"), step_avgs
+        )
+    }
+
+    fallback_count = Job.query.filter(
+        Job.translator_actual.isnot(None),
+        Job.translator_actual != Job.translator_engine,
+    ).count()
+
+    last_error = (
+        Job.query.filter(Job.status == JobStatus.FAILED, Job.error.isnot(None))
+        .order_by(Job.id.desc())
+        .first()
+    )
+
     done = by_status.get(JobStatus.DONE, 0)
     return jsonify(
         {
@@ -143,6 +236,19 @@ def stats():
             },
             "by_status": by_status,
             "by_engine": by_engine,
+            "engine_health": engine_health,
+            "engine_translate_seconds": engine_speed,
+            "avg_seconds_per_step": avg_steps,
+            "fallback_count": fallback_count,
+            "last_error": (
+                {
+                    "job_id": last_error.id,
+                    "engine": last_error.translator_engine,
+                    "error": " ".join((last_error.error or "").split())[:300],
+                }
+                if last_error
+                else None
+            ),
             "daily": [
                 {"day": str(day), "jobs": count, "estimated_cost_usd": round(float(cost), 4)}
                 for day, count, cost in daily

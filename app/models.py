@@ -86,6 +86,16 @@ class Job(db.Model):
     duration_sec = db.Column(db.Float, nullable=True)
     elapsed_sec = db.Column(db.Float, nullable=True)
     segment_count = db.Column(db.Integer, nullable=True)
+    # Engine da dung THAT SU. Khac translator_engine khi API hong va phai
+    # lui ve MarianMT — giao dien can noi ro cho nguoi dung biet.
+    translator_actual = db.Column(db.String(30), nullable=True)
+    # Thoi gian tung buoc, giay. Khong co may cot nay thi khong biet
+    # nut that nam o Whisper, o buoc dich hay o TTS.
+    extract_sec = db.Column(db.Float, nullable=True)
+    transcribe_sec = db.Column(db.Float, nullable=True)
+    translate_sec = db.Column(db.Float, nullable=True)
+    tts_sec = db.Column(db.Float, nullable=True)
+    compose_sec = db.Column(db.Float, nullable=True)
     # Uoc tinh tu elapsed_sec, KHONG phai hoa don Modal (xem app/quota.py).
     estimated_cost_usd = db.Column(db.Float, nullable=True)
 
@@ -118,6 +128,18 @@ class Job(db.Model):
             "progress": self.progress,
             "message": self.message,
             "result": result,
+            "translator_engine": self.translator_engine,
+            "translator_actual": self.translator_actual,
+            "fallback_used": bool(
+                self.translator_actual and self.translator_actual != self.translator_engine
+            ),
+            "timings": {
+                "extract": self.extract_sec,
+                "transcribe": self.transcribe_sec,
+                "translate": self.translate_sec,
+                "tts": self.tts_sec,
+                "compose": self.compose_sec,
+            },
         }
 
     def __repr__(self) -> str:

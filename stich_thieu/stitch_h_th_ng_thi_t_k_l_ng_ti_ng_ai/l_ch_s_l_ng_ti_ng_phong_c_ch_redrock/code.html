@@ -1,0 +1,490 @@
+<!DOCTYPE html><html class="dark" lang="vi" style=""><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>DUB_STUDIO - History</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "surface-container": "#1c2022",
+                      "surface-container-lowest": "#0b0f11",
+                      "inverse-primary": "#446900",
+                      "inverse-surface": "#e0e3e5",
+                      "on-primary-fixed-variant": "#324f00",
+                      "secondary-container": "#42474b",
+                      "on-primary-container": "#3e6100",
+                      "on-error-container": "#ffdad6",
+                      "on-surface-variant": "#c2c9b1",
+                      "surface-container-high": "#272b2d",
+                      "error": "#ffb4ab",
+                      "on-tertiary-fixed-variant": "#852400",
+                      "on-secondary": "#2c3134",
+                      "on-error": "#690005",
+                      "primary-fixed-dim": "#9bd93c",
+                      "on-primary-fixed": "#111f00",
+                      "tertiary-container": "#ffbfac",
+                      "primary-container": "#a2e043",
+                      "surface-bright": "#363a3c",
+                      "surface-container-highest": "#313538",
+                      "on-tertiary-container": "#a22e00",
+                      "secondary-fixed": "#dfe3e7",
+                      "on-primary": "#213600",
+                      "tertiary-fixed": "#ffdbd0",
+                      "error-container": "#93000a",
+                      "inverse-on-surface": "#2d3133",
+                      "on-secondary-fixed": "#171c1f",
+                      "primary": "#bdfd5d",
+                      "surface-container-low": "#181c1e",
+                      "outline": "#8c947d",
+                      "background": "#101416",
+                      "outline-variant": "#424937",
+                      "primary-fixed": "#b6f657",
+                      "on-tertiary": "#5e1700",
+                      "on-secondary-container": "#b1b6b9",
+                      "on-background": "#e0e3e5",
+                      "tertiary": "#ffe4dd",
+                      "secondary-fixed-dim": "#c2c7cb",
+                      "surface-variant": "#313538",
+                      "surface": "#101416",
+                      "surface-dim": "#101416",
+                      "on-secondary-fixed-variant": "#42474b",
+                      "surface-tint": "#9bd93c",
+                      "on-tertiary-fixed": "#3a0b00",
+                      "on-surface": "#e0e3e5",
+                      "tertiary-fixed-dim": "#ffb59e",
+                      "secondary": "#c2c7cb"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.25rem",
+                      "lg": "0.5rem",
+                      "xl": "0.75rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "gutter": "16px",
+                      "lg": "24px",
+                      "margin-page": "24px",
+                      "md": "16px",
+                      "sm": "8px",
+                      "xl": "32px",
+                      "base": "4px",
+                      "xs": "4px"
+              },
+              "fontFamily": {
+                      "headline-lg": [
+                              "Be Vietnam Pro"
+                      ],
+                      "body-md": [
+                              "JetBrains Mono"
+                      ],
+                      "body-lg": [
+                              "JetBrains Mono"
+                      ],
+                      "headline-md": [
+                              "Be Vietnam Pro"
+                      ],
+                      "data-tabular": [
+                              "JetBrains Mono"
+                      ],
+                      "label-sm": [
+                              "JetBrains Mono"
+                      ],
+                      "headline-xl": [
+                              "Be Vietnam Pro"
+                      ]
+              },
+              "fontSize": {
+                      "headline-lg": [
+                              "24px",
+                              {
+                                      "lineHeight": "32px",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "body-md": [
+                              "14px",
+                              {
+                                      "lineHeight": "20px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "body-lg": [
+                              "16px",
+                              {
+                                      "lineHeight": "24px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "headline-md": [
+                              "20px",
+                              {
+                                      "lineHeight": "28px",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "data-tabular": [
+                              "14px",
+                              {
+                                      "lineHeight": "20px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "label-sm": [
+                              "12px",
+                              {
+                                      "lineHeight": "16px",
+                                      "letterSpacing": "0.05em",
+                                      "fontWeight": "500"
+                              }
+                      ],
+                      "headline-xl": [
+                              "32px",
+                              {
+                                      "lineHeight": "40px",
+                                      "letterSpacing": "-0.02em",
+                                      "fontWeight": "700"
+                              }
+                      ]
+              }
+      },
+          },
+        }
+    </script>
+<style>
+        .group:hover .row-actions {
+            opacity: 1;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background font-body-md min-h-screen flex">
+<!-- SideNavBar -->
+<nav class="fixed left-0 top-0 h-screen w-60 bg-surface-container-lowest border-r border-outline-variant flex flex-col py-lg z-20">
+<div class="px-md mb-xl">
+<h1 class="font-headline-lg text-headline-lg font-bold text-primary tracking-tighter">DUB_STUDIO</h1>
+<p class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-widest mt-sm">Operational Hub</p>
+</div>
+<div class="flex-1 flex flex-col gap-sm">
+<a class="flex items-center gap-md px-md py-sm text-on-surface-variant hover:text-on-surface hover:bg-surface-container hover:text-primary transition-colors duration-200 cursor-pointer active:scale-95" href="#">
+<span class="material-symbols-outlined" data-icon="home">home</span>
+<span class="font-label-sm text-label-sm">Home</span>
+</a>
+<a class="flex items-center gap-md px-md py-sm text-on-surface-variant hover:text-on-surface hover:bg-surface-container hover:text-primary transition-colors duration-200 cursor-pointer active:scale-95" href="#">
+<span class="material-symbols-outlined" data-icon="movie_edit">movie_edit</span>
+<span class="font-label-sm text-label-sm">Dubbing Jobs</span>
+</a>
+<a class="flex items-center gap-md px-md py-sm text-on-surface-variant hover:text-on-surface hover:bg-surface-container hover:text-primary transition-colors duration-200 cursor-pointer active:scale-95" href="#">
+<span class="material-symbols-outlined" data-icon="analytics">analytics</span>
+<span class="font-label-sm text-label-sm">Analytics</span>
+</a>
+<a class="flex items-center gap-md px-md py-sm text-on-surface-variant hover:text-on-surface hover:bg-surface-container hover:text-primary transition-colors duration-200 cursor-pointer active:scale-95" href="#">
+<span class="material-symbols-outlined" data-icon="monitor_heart">monitor_heart</span>
+<span class="font-label-sm text-label-sm">System Health</span>
+</a>
+<a class="flex items-center gap-md px-md py-sm text-primary bg-surface-container-high border-l-4 border-primary hover:bg-surface-container transition-colors duration-200 cursor-pointer active:scale-95" href="#">
+<span class="material-symbols-outlined" data-icon="history">history</span>
+<span class="font-label-sm text-label-sm">History</span>
+</a>
+<a class="flex items-center gap-md px-md py-sm text-on-surface-variant hover:text-on-surface hover:bg-surface-container hover:text-primary transition-colors duration-200 cursor-pointer active:scale-95" href="#">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+<span class="font-label-sm text-label-sm">Preferences</span>
+</a>
+</div>
+<div class="px-md mt-auto">
+<div class="flex items-center gap-md pt-md border-t border-outline-variant">
+<div class="w-8 h-8 rounded-full bg-surface-container overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="A stark, high-contrast digital avatar portraying a serious technician in a dark, cyberpunk-inspired environment. The image is rendered with harsh directional lighting, emphasizing sharp geometric features and reflecting the brutalist, high-tech aesthetic of the dashboard. Deep blacks, cool greys, and subtle lime green accents." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCv5MaAyvZKyIyuhXwxyp21yCH5jGyVjQWyhylnOu7ggyIIDmColLj6Q3tDv-srm4wCEjQRv4Yn7FfVnfOnbTQPJC3qfFaXNGMM8EHZZWKKZW2AfWQhhx7SXDfdjn-9WBUU09ZZSC6LN2q_tweBeM9tgtaWW8ZRiUcoRn4vbaHWbRg2TGwg6J9JQKEEBhlZYONppBpFDDH7l3e9Gk0TpqrbysVb8NxT2jbxAiZk3tcfFW0LRz-KNzp1qA">
+</div>
+<div class="flex-1 overflow-hidden">
+<p class="font-label-sm text-label-sm text-on-surface truncate">Admin_User</p>
+</div>
+</div>
+</div>
+</nav>
+<!-- TopAppBar -->
+<header class="fixed top-0 right-0 w-[calc(100%-240px)] bg-background border-b border-outline-variant flex justify-between items-center h-16 px-lg z-10 transition-all duration-200">
+<div class="flex-1">
+<h2 class="font-headline-md text-headline-md text-on-surface hidden">History</h2>
+</div>
+<div class="flex items-center gap-md text-on-surface-variant">
+<button class="w-10 h-10 flex items-center justify-center hover:text-primary transition-colors duration-200 rounded-full hover:bg-surface-container">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+</button>
+<button class="w-10 h-10 flex items-center justify-center hover:text-primary transition-colors duration-200 rounded-full hover:bg-surface-container">
+<span class="material-symbols-outlined" data-icon="help_outline">help_outline</span>
+</button>
+</div>
+</header>
+<!-- Main Canvas -->
+<main class="ml-[240px] mt-16 p-margin-page flex-1 w-[calc(100%-240px)] flex flex-col gap-lg pb-32 relative">
+<!-- Header & Toolbar -->
+<div class="flex flex-col gap-md">
+<h1 class="font-headline-xl text-headline-xl text-on-surface">Job History</h1><div class="flex items-center gap-sm mt-xs"><span class="px-2 py-0.5 bg-primary/10 text-primary rounded-sm font-label-sm text-label-sm border border-primary/20">Tỷ lệ thành công: 91,5%</span><span class="text-on-surface-variant font-label-sm text-label-sm">Dựa trên 47 tác vụ</span></div>
+<div class="flex flex-wrap items-center justify-between gap-md bg-surface-container-low p-md rounded-DEFAULT border border-surface-container">
+<!-- Search -->
+<div class="relative w-full md:w-96">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant pointer-events-none">search</span>
+<input class="w-full bg-surface-container border border-outline-variant text-on-surface font-body-md pl-10 pr-4 py-2 rounded-DEFAULT focus:outline-none focus:border-primary focus:ring-0 placeholder:text-on-surface-variant" placeholder="Tìm theo tên video..." type="text">
+</div>
+<!-- Filters -->
+<div class="flex items-center gap-sm overflow-x-auto pb-1 md:pb-0 hide-scrollbar">
+<button class="whitespace-nowrap px-4 py-1.5 font-label-sm text-label-sm rounded-full bg-primary text-on-primary font-bold">Tất cả</button>
+<button class="whitespace-nowrap px-4 py-1.5 font-label-sm text-label-sm rounded-full bg-surface-container border border-outline-variant text-on-surface-variant hover:bg-surface-container-highest transition-colors">Hoàn tất</button>
+<button class="whitespace-nowrap px-4 py-1.5 font-label-sm text-label-sm rounded-full bg-surface-container border border-outline-variant text-on-surface-variant hover:bg-surface-container-highest transition-colors">Đang xử lý</button>
+<button class="whitespace-nowrap px-4 py-1.5 font-label-sm text-label-sm rounded-full bg-surface-container border border-outline-variant text-on-surface-variant hover:bg-surface-container-highest transition-colors">Thất bại</button>
+<button class="whitespace-nowrap px-4 py-1.5 font-label-sm text-label-sm rounded-full bg-surface-container border border-outline-variant text-on-surface-variant hover:bg-surface-container-highest transition-colors">Đã huỷ</button>
+</div>
+</div>
+</div>
+<!-- Data Table Container -->
+<div class="bg-surface-container rounded-DEFAULT border border-surface-container-highest overflow-hidden flex-1 flex flex-col">
+<div class="overflow-x-auto flex-1">
+<table class="w-full text-left border-collapse min-w-[1000px]">
+<thead class="bg-surface-container-lowest border-b border-surface-container-highest font-label-sm text-label-sm text-on-surface-variant uppercase">
+<tr>
+<th class="p-md w-12 text-center">
+<input class="w-4 h-4 bg-background border-outline-variant rounded-sm text-primary focus:ring-primary focus:ring-offset-background" type="checkbox">
+</th>
+<th class="p-md">Video</th>
+<th class="p-md">Trạng thái</th>
+<th class="p-md">Công cụ</th>
+<th class="p-md text-right">Thời lượng</th>
+<th class="p-md text-right">Thời gian XL</th>
+<th class="p-md text-right">Chi phí</th>
+<th class="p-md">Ngày tạo</th>
+<th class="p-md w-32"></th>
+</tr>
+</thead>
+<tbody class="font-data-tabular text-data-tabular text-on-surface divide-y divide-surface-container-highest">
+<!-- Row 1 -->
+<tr class="group hover:bg-surface-container-high transition-colors duration-150 h-16">
+<td class="p-md text-center">
+<input class="w-4 h-4 bg-background border-outline-variant rounded-sm text-primary focus:ring-primary focus:ring-offset-background row-checkbox" type="checkbox">
+</td>
+<td class="p-md">
+<div class="flex items-center gap-md">
+<div class="w-16 h-9 bg-background rounded-sm overflow-hidden border border-outline-variant shrink-0">
+<img class="w-full h-full object-cover" data-alt="A stark, minimalist thumbnail of an English lecture video. Dark mode aesthetic with sharp geometric lines. A glowing green waveform indicates audio activity. High contrast, brutalist design." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAM2AlUVICn5eql_SKFkdwlqZSEwKyzhv9uQ1BchOAkJKIUkTNzbDzMxNcv8rvWfU0GcwG5yrvfIxc33rffxZSJeZProDi01sv3mgFb3uCeglqP3_50RG9FQHy9VVzyOIlFSuIhXQxm7nG7_zQM-4U0kT8437jsFFitGEqWlRB_sVKrWzU23KJXniDpL1Quc7ugMC4fkbSUgH5itZ0YgGzGlX1mCCV5VOxLeFj2r0JdS7GZ-D4YiNW8Lg">
+</div>
+<span class="truncate font-body-md max-w-[200px]">Eng_Lecture_01_Intro_to_Physics.mp4</span>
+</div>
+</td>
+<td class="p-md">
+<span class="inline-flex items-center px-2 py-0.5 rounded-sm bg-primary/10 text-primary border-l-2 border-primary font-label-sm text-label-sm">Hoàn tất</span>
+</td>
+<td class="p-md font-body-md text-on-surface-variant">EN -&gt; VI (Neural)</td>
+<td class="p-md text-right text-on-surface-variant">45:20</td>
+<td class="p-md text-right">12:05</td>
+<td class="p-md text-right text-primary">$0.012</td>
+<td class="p-md text-on-surface-variant">2026-10-25 14:30</td>
+<td class="p-md">
+<div class="flex items-center justify-end gap-sm opacity-0 row-actions transition-opacity duration-200">
+<button class="w-8 h-8 rounded-sm hover:bg-surface-container-highest flex items-center justify-center text-on-surface-variant hover:text-primary transition-colors" title="Tải Video">
+<span class="material-symbols-outlined text-[20px]" data-icon="download">download</span>
+</button>
+<button class="w-8 h-8 rounded-sm hover:bg-surface-container-highest flex items-center justify-center text-on-surface-variant hover:text-primary transition-colors" title="Tải Phụ đề">
+<span class="material-symbols-outlined text-[20px]" data-icon="subtitles">subtitles</span>
+</button>
+<button class="w-8 h-8 rounded-sm hover:bg-surface-container-highest flex items-center justify-center text-on-surface-variant hover:text-error transition-colors" title="Xoá">
+<span class="material-symbols-outlined text-[20px]" data-icon="delete">delete</span>
+</button>
+</div>
+</td>
+</tr>
+<!-- Row 2 -->
+<tr class="group hover:bg-surface-container-high transition-colors duration-150 h-16">
+<td class="p-md text-center">
+<input class="w-4 h-4 bg-background border-outline-variant rounded-sm text-primary focus:ring-primary focus:ring-offset-background row-checkbox" type="checkbox">
+</td>
+<td class="p-md">
+<div class="flex items-center gap-md">
+<div class="w-16 h-9 bg-background rounded-sm overflow-hidden border border-outline-variant shrink-0">
+<img class="w-full h-full object-cover" data-alt="A stark, minimalist thumbnail of an English lecture video. Dark mode aesthetic with sharp geometric lines. A glowing green waveform indicates audio activity. High contrast, brutalist design." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCulkz2X7Tjz8X1TlWqxBpiWUHMMFs-nbQ6dkAnQAZ6rix7P8DA_lK9j609c-GzMqp37MzHuHGfw0yMWtIqT3qr8xdu65ctQIyBzkxPAq1DmYu5-ipR_844gT5k3Tk2pGuA1cCQH1zXgEVcdPLoXish3kGBcqsHNoomBiyd1gIUOo0V0JZM4NU7wH6swNFm_8E6KJrv_h3bqoh1lkRwLwvD_DJryEG_zrArjBMyG7YxvAMY1KEjqf2xeQ">
+</div>
+<span class="truncate font-body-md max-w-[200px]">Eng_Lecture_02_Thermodynamics.mp4</span>
+</div>
+</td>
+<td class="p-md">
+<span class="inline-flex items-center px-2 py-0.5 rounded-sm bg-surface-container-highest text-on-surface-variant border-l-2 border-on-surface-variant font-label-sm text-label-sm">Đang xử lý (45%)</span>
+</td>
+<td class="p-md font-body-md text-on-surface-variant">EN -&gt; VI (Neural)</td>
+<td class="p-md text-right text-on-surface-variant">52:10</td>
+<td class="p-md text-right">--:--</td>
+<td class="p-md text-right text-on-surface-variant">Est. $0.012</td>
+<td class="p-md text-on-surface-variant">2026-10-26 09:15</td>
+<td class="p-md">
+<div class="flex items-center justify-end gap-sm opacity-0 row-actions transition-opacity duration-200">
+<button class="w-8 h-8 rounded-sm hover:bg-surface-container-highest flex items-center justify-center text-on-surface-variant hover:text-error transition-colors" title="Huỷ">
+<span class="material-symbols-outlined text-[20px]" data-icon="cancel">cancel</span>
+</button>
+</div>
+</td>
+</tr>
+<!-- Row 3 -->
+<tr class="group hover:bg-surface-container-high transition-colors duration-150 h-16 bg-error-container/5 border-l-2 border-error">
+<td class="p-md text-center">
+<input class="w-4 h-4 bg-background border-outline-variant rounded-sm text-primary focus:ring-primary focus:ring-offset-background row-checkbox" type="checkbox">
+</td>
+<td class="p-md">
+<div class="flex items-center gap-md">
+<div class="w-16 h-9 bg-background rounded-sm overflow-hidden border border-outline-variant shrink-0">
+<div class="w-full h-full bg-surface-container-highest flex items-center justify-center">
+<span class="material-symbols-outlined text-on-surface-variant text-[16px]" data-icon="broken_image">broken_image</span>
+</div>
+</div>
+<span class="truncate font-body-md max-w-[200px] text-error">Advanced_Math_04_Corrupted.mkv</span>
+</div>
+</td>
+<td class="p-md">
+<span class="inline-flex items-center px-2 py-0.5 rounded-sm bg-error-container/20 text-error border-l-2 border-error font-label-sm text-label-sm">Thất bại</span>
+</td>
+<td class="p-md font-body-md text-on-surface-variant">EN -&gt; VI (Fast)</td>
+<td class="p-md text-right text-on-surface-variant">--:--</td>
+<td class="p-md text-right">00:45</td>
+<td class="p-md text-right text-on-surface-variant">$0.00</td>
+<td class="p-md text-on-surface-variant">2026-10-26 10:05</td>
+<td class="p-md">
+<div class="flex items-center justify-end gap-sm opacity-0 row-actions transition-opacity duration-200">
+<button class="w-8 h-8 rounded-sm hover:bg-surface-container-highest flex items-center justify-center text-on-surface-variant hover:text-primary transition-colors" title="Thử lại">
+<span class="material-symbols-outlined text-[20px]" data-icon="refresh">refresh</span>
+</button>
+<button class="w-8 h-8 rounded-sm hover:bg-surface-container-highest flex items-center justify-center text-on-surface-variant hover:text-error transition-colors" title="Xoá">
+<span class="material-symbols-outlined text-[20px]" data-icon="delete">delete</span>
+</button>
+</div>
+</td>
+</tr>
+<!-- Row 4 -->
+<tr class="group hover:bg-surface-container-high transition-colors duration-150 h-16">
+<td class="p-md text-center">
+<input class="w-4 h-4 bg-background border-outline-variant rounded-sm text-primary focus:ring-primary focus:ring-offset-background row-checkbox" type="checkbox">
+</td>
+<td class="p-md">
+<div class="flex items-center gap-md">
+<div class="w-16 h-9 bg-background rounded-sm overflow-hidden border border-outline-variant shrink-0">
+<img class="w-full h-full object-cover" data-alt="A stark, minimalist thumbnail of an English lecture video. Dark mode aesthetic with sharp geometric lines. A glowing green waveform indicates audio activity. High contrast, brutalist design." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAdKU6MhwxTAR1V67qq_nmWbcJlJp3LLAozbv1OnOKN0OtJPXrZ2QxVXmuozpXaRecmfAb_NbI77XARM9GqSd2wHFjPjONkgvgbTWBAUp42Fu_QH3-PNIfPwtAYh8RXOHgkXEn2onkHjXi5hUxJ_oY-48wQG02AIRhDqzt7qTzhkRAOI50oaU8zjnDch2hjnxQktzI8SMfo52dV9AiV41Jm0l0F7GC1ogTjKFZB9-Adt7Bn11oHBHA8kA">
+</div>
+<span class="truncate font-body-md max-w-[200px]">Eng_Lecture_03_Quantum_Mech.mp4</span>
+</div>
+</td>
+<td class="p-md">
+<span class="inline-flex items-center px-2 py-0.5 rounded-sm bg-primary/10 text-primary border-l-2 border-primary font-label-sm text-label-sm">Hoàn tất</span>
+</td>
+<td class="p-md font-body-md text-on-surface-variant">EN -&gt; VI (Neural)</td>
+<td class="p-md text-right text-on-surface-variant">61:05</td>
+<td class="p-md text-right">15:30</td>
+<td class="p-md text-right text-primary">$0.012</td>
+<td class="p-md text-on-surface-variant">2026-10-24 16:45</td>
+<td class="p-md">
+<div class="flex items-center justify-end gap-sm opacity-0 row-actions transition-opacity duration-200">
+<button class="w-8 h-8 rounded-sm hover:bg-surface-container-highest flex items-center justify-center text-on-surface-variant hover:text-primary transition-colors" title="Tải Video">
+<span class="material-symbols-outlined text-[20px]" data-icon="download">download</span>
+</button>
+<button class="w-8 h-8 rounded-sm hover:bg-surface-container-highest flex items-center justify-center text-on-surface-variant hover:text-primary transition-colors" title="Tải Phụ đề">
+<span class="material-symbols-outlined text-[20px]" data-icon="subtitles">subtitles</span>
+</button>
+<button class="w-8 h-8 rounded-sm hover:bg-surface-container-highest flex items-center justify-center text-on-surface-variant hover:text-error transition-colors" title="Xoá">
+<span class="material-symbols-outlined text-[20px]" data-icon="delete">delete</span>
+</button>
+</div>
+</td>
+</tr>
+<!-- Row 5 -->
+<tr class="group hover:bg-surface-container-high transition-colors duration-150 h-16 opacity-60 grayscale">
+<td class="p-md text-center">
+<input class="w-4 h-4 bg-background border-outline-variant rounded-sm text-primary focus:ring-primary focus:ring-offset-background row-checkbox" type="checkbox">
+</td>
+<td class="p-md">
+<div class="flex items-center gap-md">
+<div class="w-16 h-9 bg-background rounded-sm overflow-hidden border border-outline-variant shrink-0">
+<img class="w-full h-full object-cover" data-alt="A stark, minimalist thumbnail of an English lecture video. Dark mode aesthetic with sharp geometric lines. A glowing green waveform indicates audio activity. High contrast, brutalist design." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDZiaXweETOfFgYDXgbv2uWni8kbvPlZMi7cyCiFpBORCirY952Zw4Al93ypPWtDCnD5sNSWGj1Zn6CbS2FgLwSOF5zKjmcrPeV1VBmHjXFERC0bNGhJ43xOoZOPO_iy95w9e2CLQuyoHuip38WikNSeKcrQQDs6v83nIpwvassF18GO2coZ7QrmHjdDp7smaG0on5xFQrBvWi2EfG8FwtuQxL1UZbDUK5q9VWt9ImoDLLLZGy6w9yhkw">
+</div>
+<span class="truncate font-body-md max-w-[200px] line-through">Eng_Lecture_04_Cancelled.mp4</span>
+</div>
+</td>
+<td class="p-md">
+<span class="inline-flex items-center px-2 py-0.5 rounded-sm bg-surface-container-lowest text-on-surface-variant border-l-2 border-outline-variant font-label-sm text-label-sm">Đã huỷ</span>
+</td>
+<td class="p-md font-body-md text-on-surface-variant">EN -&gt; VI (Fast)</td>
+<td class="p-md text-right text-on-surface-variant">30:00</td>
+<td class="p-md text-right">00:00</td>
+<td class="p-md text-right text-on-surface-variant">$0.00</td>
+<td class="p-md text-on-surface-variant">2026-10-23 11:20</td>
+<td class="p-md">
+<div class="flex items-center justify-end gap-sm opacity-0 row-actions transition-opacity duration-200">
+<button class="w-8 h-8 rounded-sm hover:bg-surface-container-highest flex items-center justify-center text-on-surface-variant hover:text-error transition-colors" title="Xoá">
+<span class="material-symbols-outlined text-[20px]" data-icon="delete">delete</span>
+</button>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<!-- Pagination Footer -->
+<div class="bg-surface-container-low border-t border-surface-container-highest p-md flex items-center justify-between font-label-sm text-label-sm text-on-surface-variant">
+<div class="">Hiển thị 1-5 trong 47</div>
+<div class="flex items-center gap-sm">
+<button class="w-8 h-8 flex items-center justify-center rounded-sm hover:bg-surface-container-highest hover:text-on-surface transition-colors disabled:opacity-50" disabled="">
+<span class="material-symbols-outlined text-[16px]" data-icon="chevron_left">chevron_left</span>
+</button>
+<span class="px-2">1 / 10</span>
+<button class="w-8 h-8 flex items-center justify-center rounded-sm hover:bg-surface-container-highest hover:text-on-surface transition-colors">
+<span class="material-symbols-outlined text-[16px]" data-icon="chevron_right">chevron_right</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Floating Action Bar (Hidden by default, shown when items selected) -->
+<div class="fixed bottom-lg left-1/2 -translate-x-1/2 ml-[120px] bg-surface-container-highest border border-outline-variant shadow-2xl rounded-DEFAULT px-lg py-md flex items-center gap-xl z-50 transform translate-y-20 opacity-0 transition-all duration-300" id="selection-bar">
+<span class="font-label-sm text-label-sm text-on-surface tracking-widest uppercase">Đã chọn <span class="text-primary font-bold" id="selection-count">0</span> mục</span>
+<div class="w-px h-6 bg-outline-variant"></div>
+<div class="flex gap-sm">
+<button class="px-4 py-2 font-label-sm text-label-sm bg-transparent border border-primary text-primary hover:bg-primary/10 transition-colors uppercase tracking-wider flex items-center gap-xs">
+<span class="material-symbols-outlined text-[16px]" data-icon="download">download</span> Tải về
+                </button>
+<button class="px-4 py-2 font-label-sm text-label-sm bg-error text-on-error hover:bg-error/90 transition-colors uppercase tracking-wider flex items-center gap-xs rounded-sm">
+<span class="material-symbols-outlined text-[16px]" data-icon="delete">delete</span> Xoá
+                </button>
+</div>
+<button class="ml-sm text-on-surface-variant hover:text-on-surface" id="close-selection">
+<span class="material-symbols-outlined" data-icon="close">close</span>
+</button>
+</div>
+</main>
+<script>
+        // Simple logic to demonstrate the selection bar
+        const checkboxes = document.querySelectorAll('.row-checkbox');
+        const selectionBar = document.getElementById('selection-bar');
+        const selectionCount = document.getElementById('selection-count');
+        const closeSelection = document.getElementById('close-selection');
+
+        function updateSelection() {
+            const count = Array.from(checkboxes).filter(cb => cb.checked).length;
+            if (count > 0) {
+                selectionCount.textContent = count;
+                selectionBar.classList.remove('translate-y-20', 'opacity-0');
+                selectionBar.classList.add('translate-y-0', 'opacity-100');
+            } else {
+                selectionBar.classList.add('translate-y-20', 'opacity-0');
+                selectionBar.classList.remove('translate-y-0', 'opacity-100');
+            }
+        }
+
+        checkboxes.forEach(cb => {
+            cb.addEventListener('change', updateSelection);
+        });
+
+        closeSelection.addEventListener('click', () => {
+            checkboxes.forEach(cb => cb.checked = false);
+            updateSelection();
+        });
+    </script>
+
+
+</body></html>

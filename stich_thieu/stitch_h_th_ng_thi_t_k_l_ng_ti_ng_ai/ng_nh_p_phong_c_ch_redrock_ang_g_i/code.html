@@ -1,0 +1,206 @@
+<!DOCTYPE html><html class="dark" lang="vi"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>Đăng nhập - DUB_STUDIO</title>
+<!-- Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect">
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect">
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<!-- Tailwind Config -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "on-primary-container": "#3e6100",
+                    "tertiary-container": "#ffbfac",
+                    "inverse-surface": "#e0e3e5",
+                    "background": "#101416",
+                    "tertiary-fixed": "#ffdbd0",
+                    "primary-fixed-dim": "#9bd93c",
+                    "on-primary-fixed-variant": "#324f00",
+                    "inverse-primary": "#446900",
+                    "surface-container-high": "#272b2d",
+                    "error": "#ffb4ab",
+                    "surface": "#101416",
+                    "surface-bright": "#363a3c",
+                    "surface-container-low": "#181c1e",
+                    "tertiary-fixed-dim": "#ffb59e",
+                    "on-secondary-container": "#b1b6b9",
+                    "on-error-container": "#ffdad6",
+                    "on-secondary-fixed-variant": "#42474b",
+                    "on-tertiary-fixed": "#3a0b00",
+                    "secondary": "#c2c7cb",
+                    "on-tertiary": "#5e1700",
+                    "tertiary": "#ffe4dd",
+                    "on-background": "#e0e3e5",
+                    "on-surface-variant": "#c2c9b1",
+                    "surface-tint": "#9bd93c",
+                    "surface-container-highest": "#313538",
+                    "primary-container": "#a2e043",
+                    "primary-fixed": "#b6f657",
+                    "secondary-fixed": "#dfe3e7",
+                    "surface-container-lowest": "#0b0f11",
+                    "primary": "#bdfd5d",
+                    "on-secondary": "#2c3134",
+                    "on-error": "#690005",
+                    "surface-dim": "#101416",
+                    "on-primary-fixed": "#111f00",
+                    "on-tertiary-fixed-variant": "#852400",
+                    "on-tertiary-container": "#a22e00",
+                    "on-primary": "#213600",
+                    "surface-variant": "#313538",
+                    "error-container": "#93000a",
+                    "outline": "#8c947d",
+                    "outline-variant": "#424937",
+                    "secondary-fixed-dim": "#c2c7cb",
+                    "inverse-on-surface": "#2d3133",
+                    "secondary-container": "#42474b",
+                    "on-secondary-fixed": "#171c1f",
+                    "surface-container": "#1c2022",
+                    "on-surface": "#e0e3e5"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "xs": "4px",
+                    "lg": "24px",
+                    "gutter": "16px",
+                    "margin-page": "24px",
+                    "sm": "8px",
+                    "base": "4px",
+                    "md": "16px",
+                    "xl": "32px"
+            },
+            "fontFamily": {
+                    "body-md": ["JetBrains Mono"],
+                    "body-lg": ["JetBrains Mono"],
+                    "headline-lg": ["Be Vietnam Pro"],
+                    "headline-xl": ["Be Vietnam Pro"],
+                    "headline-md": ["Be Vietnam Pro"],
+                    "label-sm": ["JetBrains Mono"],
+                    "data-tabular": ["JetBrains Mono"]
+            },
+            "fontSize": {
+                    "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                    "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "headline-lg": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                    "headline-xl": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "headline-md": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                    "label-sm": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                    "data-tabular": ["14px", {"lineHeight": "20px", "fontWeight": "400"}]
+            }
+          }
+        }
+      }
+    </script>
+<style>
+        /* Custom Keyframes for Spinner */
+        @keyframes rotate-brutal {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .animate-spin-brutal {
+            animation: rotate-brutal 1s linear infinite;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-surface min-h-screen flex selection:bg-primary-container selection:text-on-primary-container">
+<div class="flex flex-col md:flex-row w-full min-h-screen">
+<!-- Left Panel: Empty / Ambient State -->
+<div class="hidden md:flex w-full md:w-1/2 bg-surface-container-low border-r border-outline-variant relative overflow-hidden items-end p-xl">
+<!-- Background Image -->
+<div class="absolute inset-0 z-0">
+<div class="w-full h-full bg-cover bg-center opacity-40 mix-blend-luminosity" data-alt="A brutalist, high-contrast abstract digital environment representing a dark mode command center. Deep obsidian blacks and carbon grays dominate the background, overlaid with an intense, glowing lime green topographic or wireframe grid pattern. The lighting is harsh and angular, creating a sense of raw computational power and operational intensity. The aesthetic is strictly technological, devoid of organic elements, resembling a raw data processing matrix." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuD0SqsG4y1B1-2o6CUuz0jMjviohOYAvZjVjBRFQA1gt3JDqGMxAc1D0bH_8uTZWNavksn_hkobjuREYIYXwTjoVI3eeFzsAjj3UalfpwMhH_oLA9Ejw0ExV9j1sLxcagTaD074L145n7yhRn5pXbmA7hTmJsUn559zx7CAyhxBpXkY7FGCRg61ZLqKTegYRqKwm01gjOsmGXpyBUma2pwVMRaqlsdpKExIXXAxEUf-OChOiFxgqxZPtw')"></div>
+<!-- Gradient Overlay for readability -->
+<div class="absolute inset-0 bg-gradient-to-t from-background via-background/50 to-transparent"></div>
+</div>
+<!-- Content Overlay -->
+<div class="relative z-10 w-full">
+<div class="mb-md">
+<span class="material-symbols-outlined text-primary text-4xl" data-weight="fill" style="font-variation-settings: 'FILL' 1;">
+                        mic_external_on
+                    </span>
+</div>
+<h2 class="text-headline-lg font-headline-lg text-on-surface mb-sm tracking-tight uppercase">
+                    Hệ thống <br><span class="text-primary">Sẵn sàng</span>
+</h2>
+<p class="text-body-md font-body-md text-on-surface-variant max-w-sm">
+                    Phiên bản 2.4.1. Đang kết nối tới máy chủ phân tích ngôn ngữ.
+                </p>
+<div class="mt-lg flex items-center gap-sm">
+<div class="w-2 h-2 bg-primary rounded-none animate-pulse"></div>
+<span class="text-label-sm font-label-sm text-primary uppercase">Trạng thái: Hoạt động</span>
+</div>
+</div>
+</div>
+<!-- Right Panel: Form State (Submitting) -->
+<div class="w-full md:w-1/2 flex items-center justify-center p-gutter md:p-xl bg-background relative">
+<!-- Brutalist Grid Lines (Subtle) -->
+<div class="absolute inset-0 pointer-events-none opacity-[0.03]" style="background-image: linear-gradient(var(--tw-colors-outline-variant) 1px, transparent 1px), linear-gradient(90deg, var(--tw-colors-outline-variant) 1px, transparent 1px); background-size: 32px 32px;"></div>
+<div class="w-full max-w-md relative z-10 p-lg bg-surface-container border border-outline-variant shadow-[4px_4px_0px_0px_rgba(66,73,55,1)]">
+<!-- Header -->
+<div class="mb-xl">
+<h1 class="text-headline-xl font-headline-xl text-primary tracking-tighter uppercase mb-xs">
+                        DUB_STUDIO
+                    </h1>
+<p class="text-body-md font-body-md text-on-surface-variant border-l-2 border-primary pl-sm">
+                        Truy cập bảng điều khiển vận hành.
+                    </p>
+</div>
+<!-- Form -->
+<form class="space-y-lg flex flex-col" onsubmit="event.preventDefault();">
+<!-- Email Input (Disabled/Filled) -->
+<div class="flex flex-col gap-xs">
+<label class="text-label-sm font-label-sm text-on-surface-variant uppercase flex justify-between" for="email">
+<span>Email</span>
+<span class="material-symbols-outlined text-[14px]">lock</span>
+</label>
+<input class="w-full bg-surface-container-highest border border-outline text-on-surface-variant text-body-md font-body-md px-md py-sm focus:outline-none focus:border-primary opacity-50 cursor-not-allowed transition-colors" disabled="" id="email" type="email" value="operator_01@dubstudio.vn">
+</div>
+<!-- Password Input (Disabled/Filled) -->
+<div class="flex flex-col gap-xs">
+<label class="text-label-sm font-label-sm text-on-surface-variant uppercase flex justify-between" for="password">
+<span>Mật khẩu</span>
+<span class="material-symbols-outlined text-[14px]">lock</span>
+</label>
+<input class="w-full bg-surface-container-highest border border-outline text-on-surface-variant text-body-md font-body-md px-md py-sm focus:outline-none focus:border-primary opacity-50 cursor-not-allowed transition-colors font-mono tracking-widest" disabled="" id="password" type="password" value="••••••••••••">
+</div>
+<!-- Actions -->
+<div class="flex flex-col gap-md pt-sm">
+<!-- Submit Button (Loading State) -->
+<button class="w-full bg-primary-container text-on-primary-container border-2 border-primary-container hover:bg-transparent hover:text-primary transition-all duration-200 px-lg py-md text-label-sm font-label-sm uppercase tracking-wider flex items-center justify-center gap-sm cursor-wait opacity-80" disabled="" type="button">
+<svg class="animate-spin-brutal h-5 w-5 text-on-primary-container" fill="none" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3"></circle>
+<path class="opacity-75" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" fill="currentColor"></path>
+</svg>
+<span>Đang xử lý...</span>
+</button>
+<div class="flex justify-between items-center text-label-sm font-label-sm">
+<a class="text-on-surface-variant hover:text-primary underline decoration-outline-variant hover:decoration-primary transition-colors opacity-50 cursor-not-allowed pointer-events-none" href="#">
+                                Quên mật khẩu?
+                            </a>
+<a class="text-on-surface-variant hover:text-primary underline decoration-outline-variant hover:decoration-primary transition-colors opacity-50 cursor-not-allowed pointer-events-none" href="#">
+                                Đăng ký
+                            </a>
+</div>
+</div>
+</form>
+<!-- Status terminal line -->
+<div class="mt-xl pt-sm border-t border-outline-variant flex items-center gap-xs text-[10px] font-data-tabular text-outline uppercase tracking-widest opacity-50">
+<span class="material-symbols-outlined text-[12px]">terminal</span>
+<span>Init auth sequence [192.168.1.104]...</span>
+</div>
+</div>
+</div>
+</div>
+</body></html>

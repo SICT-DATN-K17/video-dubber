@@ -127,4 +127,12 @@ def job_progress(job_id: int):
     job = Job.query.filter_by(id=job_id, user_id=current_user.id).first()
     if job is None:
         return jsonify({"error": "Không tìm thấy job."}), 404
-    return jsonify(job.to_progress_dict())
+
+    payload = job.to_progress_dict()
+    if job.status == JobStatus.QUEUED:
+        # max_containers gioi han so container GPU, nen job den sau xep hang
+        # that su. Khong bao thi nguoi dung tuong he thong bi treo.
+        payload["queue_position"] = (
+            Job.query.filter(Job.status == JobStatus.QUEUED, Job.id < job.id).count()
+        )
+    return jsonify(payload)

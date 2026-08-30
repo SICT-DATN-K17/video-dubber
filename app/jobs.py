@@ -106,6 +106,12 @@ def run_job(flask_app: Flask, job_id: int, video_path: Path, config: DubbingConf
 
         job.elapsed_sec = result.elapsed_seconds
         job.estimated_cost_usd = estimate_cost(result.elapsed_seconds)
+        job.translator_actual = result.translator_used or None
+        job.extract_sec = result.timings.get("extract")
+        job.transcribe_sec = result.timings.get("transcribe")
+        job.translate_sec = result.timings.get("translate")
+        job.tts_sec = result.timings.get("tts")
+        job.compose_sec = result.timings.get("compose")
         job.segment_count = len(result.segments) if result.segments else None
         job.finished_at = utcnow()
 
@@ -114,7 +120,13 @@ def run_job(flask_app: Flask, job_id: int, video_path: Path, config: DubbingConf
             srt_name = result.srt_path.name if result.srt_path else None
             job.status = JobStatus.DONE
             job.progress = 100
-            job.message = "Hoàn tất xử lý video."
+            if result.fallback_from:
+                job.message = (
+                    f"Hoàn tất, nhưng {result.fallback_from} gặp lỗi nên đã "
+                    "chuyển sang MarianMT."
+                )
+            else:
+                job.message = "Hoàn tất xử lý video."
             job.video_name = output_name
             job.video_url = f"/media/output/{quote(output_name)}"
             job.srt_name = srt_name
