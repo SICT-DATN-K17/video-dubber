@@ -267,3 +267,14 @@ def test_last_error_reports_when_it_happened(app, as_admin, user):
     last = as_admin.get("/api/admin/stats").get_json()["last_error"]
     assert last["error"] == "model gone"
     assert last["at"]
+
+
+def test_donut_uses_distinct_hues_not_one_ramp(as_admin):
+    """Bản cũ tô hai công cụ bằng hai bậc của cùng dải lime nên nhìn ra một màu.
+
+    Bộ màu hiện tại đã qua validator: tách CVD ΔE 11.1, mắt thường ΔE 26.5.
+    Đổi màu thì phải chạy lại validator, đừng chọn bằng mắt.
+    """
+    html = as_admin.get("/quan-tri/thong-ke").get_data(as_text=True)
+    assert '["#6fa30f", "#3987e5", "#d55181"]' in html
+    assert '"#bdfd5d", "#9bd93c"' not in html

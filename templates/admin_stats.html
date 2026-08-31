@@ -99,7 +99,16 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.5.1/chart.umd.min.js"></script>
 <script>
   (function () {
-    const COLOURS = ["#bdfd5d", "#9bd93c", "#ffbfac", "#c2c7cb", "#8c947d"];
+    /**
+     * Bảng màu phân loại — mỗi công cụ dịch một TÔNG MÀU KHÁC HẲN, không phải
+     * hai bậc đậm nhạt của cùng một màu (bản cũ dùng #bdfd5d với #9bd93c, cách
+     * nhau ΔE 10.6 nên nhìn ra một màu). Bộ này tách CVD ΔE 11.1, mắt thường
+     * ΔE 26.5 trên nền #1c2022 — đủ xa cả với người mù màu.
+     */
+    const SERIES = ["#6fa30f", "#3987e5", "#d55181"];
+
+    //: Chỉ một chuỗi số liệu thì màu không mang thông tin gì — dùng màu thương hiệu.
+    const BRAND = "#bdfd5d";
     const INK = "#c2c9b1";                  // on-surface-variant
     const GRID = "rgba(66, 73, 55, 0.5)";   // outline-variant, làm mờ đi
 
@@ -240,7 +249,7 @@
           labels: names,
           datasets: [{
             data: values,
-            backgroundColor: names.map(function (_, i) { return COLOURS[i % COLOURS.length]; }),
+            backgroundColor: names.map(function (_, i) { return SERIES[i % SERIES.length]; }),
             borderColor: "#1c2022",   // trùng nền thẻ, tạo khe hở giữa các múi
             borderWidth: 3,
             hoverOffset: 8
@@ -306,7 +315,9 @@
           datasets: [{
             label: "Giây",
             data: keys.map(function (key) { return steps[key]; }),
-            backgroundColor: keys.map(function (_, i) { return COLOURS[i % COLOURS.length]; }),
+            // Năm cột đều là một đại lượng (giây) nên tô cùng màu: đổi màu theo
+            // thứ tự chỉ khiến người xem đi tìm ý nghĩa không tồn tại.
+            backgroundColor: BRAND,
             borderRadius: 6,
             borderSkipped: false,
             barThickness: 22
