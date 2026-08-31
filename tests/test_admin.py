@@ -183,3 +183,30 @@ def test_proxy_fix_splits_limit_per_real_ip(monkeypatch):
     assert 429 not in per_ip
 
     importlib.reload(app_pkg)
+
+
+# ── Trang quản trị (HTML) ────────────────────────────────────
+ADMIN_PAGES = ["/quan-tri/thong-ke", "/quan-tri/nguoi-dung", "/quan-tri/he-thong"]
+
+
+@pytest.mark.parametrize("path", ADMIN_PAGES)
+def test_admin_pages_open_for_admin(as_admin, path):
+    assert as_admin.get(path).status_code == 200
+
+
+@pytest.mark.parametrize("path", ADMIN_PAGES)
+def test_admin_pages_forbidden_for_normal_user(as_user, path):
+    """Trang HTML trả 403, không phải JSON như các endpoint /api."""
+    response = as_user.get(path)
+    assert response.status_code == 403
+    assert not response.is_json
+
+
+@pytest.mark.parametrize("path", ADMIN_PAGES)
+def test_admin_pages_redirect_anonymous(client, path):
+    assert client.get(path).status_code == 302
+
+
+def test_sidebar_hides_admin_menu_from_normal_user(as_user, as_admin):
+    assert "/quan-tri/thong-ke" not in as_user.get("/").get_data(as_text=True)
+    assert "/quan-tri/thong-ke" in as_admin.get("/").get_data(as_text=True)

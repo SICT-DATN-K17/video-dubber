@@ -29,6 +29,11 @@
       ('main.index', 'add_circle', 'Tạo bản lồng tiếng'),
       ('main.history', 'history', 'Lịch sử'),
     ] %}
+    {% set admin_items = [
+      ('main.admin_stats', 'monitoring', 'Thống kê'),
+      ('main.admin_users', 'group', 'Người dùng'),
+      ('main.admin_system', 'monitor_heart', 'Hệ thống')
+    ] %}
     <ul class="flex-1 overflow-y-auto py-2">
       {% for endpoint, icon, label in nav_items %}
       <li>
@@ -39,6 +44,21 @@
         </a>
       </li>
       {% endfor %}
+
+      {% if current_user.is_admin %}
+      <li class="px-md pt-lg pb-2">
+        <span class="font-label-sm text-label-sm uppercase tracking-wider text-on-surface-variant/60">Quản trị</span>
+      </li>
+      {% for endpoint, icon, label in admin_items %}
+      <li>
+        <a href="{{ url_for(endpoint) }}"
+          class="flex items-center gap-3 px-md py-3 font-body-md text-body-md transition-colors
+                 {% if request.endpoint == endpoint %}text-primary bg-primary/10 border-l-2 border-primary{% else %}text-on-surface-variant hover:text-on-surface hover:bg-surface-variant/50 border-l-2 border-transparent{% endif %}">
+          <span class="material-symbols-outlined">{{ icon }}</span>{{ label }}
+        </a>
+      </li>
+      {% endfor %}
+      {% endif %}
     </ul>
 
     <div class="p-md border-t border-outline-variant">

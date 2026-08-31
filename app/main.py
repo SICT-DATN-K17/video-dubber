@@ -13,6 +13,7 @@ from sqlalchemy import text
 from app.extensions import db
 from app.legal import PRIVACY, TERMS, UPDATED
 from app.models import Job, JobStatus
+from app.permissions import require_admin_page
 from app.quota import get_usage
 from app.storage import refresh_outputs
 from config.settings import (
@@ -68,6 +69,24 @@ def index():
 @login_required
 def history():
     return render_template("history.html")
+
+
+@bp.get("/quan-tri/thong-ke")
+@require_admin_page
+def admin_stats():
+    return render_template("admin_stats.html")
+
+
+@bp.get("/quan-tri/nguoi-dung")
+@require_admin_page
+def admin_users():
+    return render_template("admin_users.html")
+
+
+@bp.get("/quan-tri/he-thong")
+@require_admin_page
+def admin_system():
+    return render_template("admin_system.html")
 
 
 @bp.get("/job/<int:job_id>")

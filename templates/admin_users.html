@@ -1,0 +1,243 @@
+{% extends "layout.html" %}
+{% block title %}Người dùng · DUB_STUDIO{% endblock %}
+
+{% block content %}
+<div class="mb-lg flex flex-wrap items-center justify-between gap-md">
+  <div>
+    <h2 class="font-headline-xl text-headline-xl text-on-surface flex items-center gap-3">
+      <span class="material-symbols-outlined text-[32px] text-primary">group</span>Người dùng
+    </h2>
+    <p id="userCount" class="font-body-md text-body-md text-on-surface-variant mt-1">Đang tải...</p>
+  </div>
+  <input id="search" type="search" placeholder="Tìm tên đăng nhập..."
+    class="bg-background border border-outline-variant text-on-surface font-body-md text-body-md px-4 py-2 rounded-xl focus:outline-none focus:border-primary placeholder-outline">
+</div>
+
+<div id="toast" class="hidden rounded-xl px-4 py-3 mb-lg font-body-md text-body-md"></div>
+
+<div class="bg-surface-container rounded-2xl border border-outline-variant/30 overflow-hidden">
+  <div class="overflow-x-auto">
+    <table class="w-full min-w-[900px]">
+      <thead>
+        <tr class="bg-surface-container-high">
+          {% for label in ['Tên đăng nhập', 'Vai trò', 'Trạng thái', 'Lượt hôm nay', 'Giây GPU', 'Chi phí', 'Tham gia', ''] %}
+          <th class="text-left px-4 py-3 font-label-sm text-label-sm uppercase tracking-wider text-on-surface-variant">{{ label }}</th>
+          {% endfor %}
+        </tr>
+      </thead>
+      <tbody id="rows"></tbody>
+    </table>
+  </div>
+</div>
+
+{# ── Ngăn kéo đặt hạn mức riêng ────────────────────────── #}
+<div id="drawer" class="hidden fixed inset-0 z-50">
+  <div id="drawerBackdrop" class="absolute inset-0 bg-black/60"></div>
+  <div class="absolute right-0 top-0 h-full w-full max-w-md bg-surface-container border-l border-outline-variant p-lg flex flex-col gap-lg overflow-y-auto">
+    <div class="flex items-start justify-between gap-md">
+      <div>
+        <h3 class="font-headline-md text-headline-md text-on-surface">Hạn mức riêng</h3>
+        <p id="drawerUser" class="font-body-md text-body-md text-on-surface-variant mt-1"></p>
+      </div>
+      <button type="button" id="drawerClose" class="text-on-surface-variant hover:text-on-surface">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+    </div>
+
+    <div class="flex flex-col gap-2">
+      <label for="quotaInput" class="font-label-sm text-label-sm uppercase tracking-wider text-on-surface-variant">
+        Số lượt mỗi ngày
+      </label>
+      <input id="quotaInput" type="number" min="0"
+        class="bg-background border border-outline-variant text-on-surface font-body-md text-body-md px-4 py-2 rounded-xl focus:outline-none focus:border-primary tabular">
+      <p class="font-label-sm text-label-sm text-on-surface-variant">
+        Để trống để dùng hạn mức mặc định của hệ thống.
+      </p>
+    </div>
+
+    <div class="flex gap-3">
+      <button type="button" id="quotaSave"
+        class="bg-primary text-on-primary font-label-sm text-label-sm uppercase tracking-wider px-4 py-2 rounded-full font-bold">
+        Lưu
+      </button>
+      <button type="button" id="quotaClear"
+        class="border border-outline-variant text-on-surface-variant font-label-sm text-label-sm uppercase tracking-wider px-4 py-2 rounded-full">
+        Dùng mặc định
+      </button>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  (function () {
+    const CSRF = "{{ csrf_token() }}";
+    const ME = {{ current_user.id }};
+    let users = [];
+    let editing = null;
+
+    function escapeHtml(value) {
+      const div = document.createElement("div");
+      div.textContent = value == null ? "" : value;
+      return div.innerHTML;
+    }
+
+    function toast(message, kind) {
+      const box = document.getElementById("toast");
+      box.textContent = message;
+      box.className = "rounded-xl px-4 py-3 mb-lg font-body-md text-body-md border " +
+        (kind === "error"
+          ? "bg-error-container/20 border-error/50 text-error"
+          : "bg-primary/10 border-primary/40 text-primary");
+      box.classList.remove("hidden");
+      setTimeout(function () { box.classList.add("hidden"); }, 4000);
+    }
+
+    async function patch(id, payload) {
+      const res = await fetch("/api/admin/users/" + id, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", "X-CSRFToken": CSRF },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Không cập nhật được.");
+      return data;
+    }
+
+    function bar(used, limit) {
+      const pct = limit ? Math.min(100, used / limit * 100) : 0;
+      const colour = pct >= 100 ? "bg-error" : pct >= 80 ? "bg-tertiary" : "bg-primary";
+      return '<div class="w-20 h-1.5 bg-surface-container-high rounded-full overflow-hidden mt-1">' +
+        '<div class="h-full ' + colour + '" style="width:' + pct + '%"></div></div>';
+    }
+
+    function render() {
+      const keyword = document.getElementById("search").value.trim().toLowerCase();
+      const visible = users.filter(function (u) { return u.username.toLowerCase().includes(keyword); });
+      document.getElementById("userCount").textContent = visible.length + " tài khoản";
+
+      document.getElementById("rows").innerHTML = visible.map(function (u) {
+        const self = u.id === ME;
+        const jobs = u.usage.jobs;
+        return '<tr class="border-t border-outline-variant/30 hover:bg-surface-container-high/60">' +
+          '<td class="px-4 py-3"><span class="font-body-md text-body-md text-on-surface">' + escapeHtml(u.username) + "</span>" +
+            (self ? '<span class="ml-2 font-label-sm text-label-sm text-on-surface-variant">(bạn)</span>' : "") + "</td>" +
+
+          '<td class="px-4 py-3">' +
+            '<select data-role="' + u.id + '" ' + (self ? "disabled title=\'Không thể tự đổi quyền của chính mình\'" : "") +
+            ' class="bg-background border border-outline-variant text-on-surface font-body-md text-body-md px-2 py-1 rounded-lg disabled:opacity-40">' +
+            '<option value="user"' + (u.role === "user" ? " selected" : "") + ">Người dùng</option>" +
+            '<option value="admin"' + (u.role === "admin" ? " selected" : "") + ">Quản trị</option>" +
+            "</select></td>" +
+
+          '<td class="px-4 py-3">' +
+            '<button type="button" data-toggle="' + u.id + '" ' + (self ? "disabled" : "") +
+            ' class="px-3 py-1 rounded-full border font-label-sm text-label-sm disabled:opacity-40 ' +
+            (u.is_active ? "border-primary/50 text-primary bg-primary/10" : "border-error/50 text-error bg-error/10") + '">' +
+            (u.is_active ? "Hoạt động" : "Đã khoá") + "</button></td>" +
+
+          '<td class="px-4 py-3"><span class="tabular text-on-surface-variant">' + jobs.used + "/" + jobs.limit + "</span>" +
+            bar(jobs.used, jobs.limit) + "</td>" +
+          '<td class="px-4 py-3 tabular text-on-surface-variant">' + u.usage.gpu_seconds.used + "s</td>" +
+          '<td class="px-4 py-3 tabular text-on-surface-variant">$' + u.usage.estimated_cost_usd.toFixed(4) + "</td>" +
+          '<td class="px-4 py-3 tabular text-on-surface-variant">' +
+            (u.created_at ? u.created_at.slice(0, 10) : "—") + "</td>" +
+          '<td class="px-4 py-3 text-right"><button type="button" data-quota="' + u.id +
+            '" class="text-on-surface-variant hover:text-primary p-1" title="Đặt hạn mức riêng">' +
+            '<span class="material-symbols-outlined text-[18px]">tune</span></button></td></tr>';
+      }).join("");
+    }
+
+    async function load() {
+      try {
+        const res = await fetch("/api/admin/users");
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Không tải được danh sách.");
+        users = data.users;
+        render();
+      } catch (err) {
+        toast(err.message, "error");
+      }
+    }
+
+    document.getElementById("search").addEventListener("input", render);
+
+    document.getElementById("rows").addEventListener("change", async function (e) {
+      const select = e.target.closest("[data-role]");
+      if (!select) return;
+      const id = Number(select.dataset.role);
+      const person = users.find(function (u) { return u.id === id; });
+      if (!window.confirm('Đổi quyền của "' + person.username + '" thành ' +
+          (select.value === "admin" ? "Quản trị" : "Người dùng") + "?")) {
+        render();
+        return;
+      }
+      try {
+        await patch(id, { role: select.value });
+        toast("Đã đổi quyền của " + person.username + ".");
+        load();
+      } catch (err) {
+        toast(err.message, "error");
+        render();
+      }
+    });
+
+    document.getElementById("rows").addEventListener("click", async function (e) {
+      const toggle = e.target.closest("[data-toggle]");
+      if (toggle) {
+        const id = Number(toggle.dataset.toggle);
+        const person = users.find(function (u) { return u.id === id; });
+        const next = !person.is_active;
+        const question = next
+          ? 'Mở khoá tài khoản "' + person.username + '"?'
+          : 'Khoá tài khoản "' + person.username + '"? Người này sẽ không đăng nhập được nữa.';
+        if (!window.confirm(question)) return;
+        try {
+          await patch(id, { is_active: next });
+          toast(next ? "Đã mở khoá " + person.username + "." : "Đã khoá " + person.username + ".");
+          load();
+        } catch (err) {
+          toast(err.message, "error");
+        }
+        return;
+      }
+
+      const quota = e.target.closest("[data-quota]");
+      if (quota) {
+        editing = users.find(function (u) { return u.id === Number(quota.dataset.quota); });
+        document.getElementById("drawerUser").textContent =
+          editing.username + " — đang dùng " + editing.usage.jobs.used + "/" + editing.usage.jobs.limit + " lượt hôm nay";
+        document.getElementById("quotaInput").value =
+          editing.quota_jobs_per_day == null ? "" : editing.quota_jobs_per_day;
+        document.getElementById("drawer").classList.remove("hidden");
+      }
+    });
+
+    function closeDrawer() {
+      document.getElementById("drawer").classList.add("hidden");
+      editing = null;
+    }
+    document.getElementById("drawerClose").addEventListener("click", closeDrawer);
+    document.getElementById("drawerBackdrop").addEventListener("click", closeDrawer);
+
+    document.getElementById("quotaSave").addEventListener("click", async function () {
+      const raw = document.getElementById("quotaInput").value.trim();
+      try {
+        await patch(editing.id, { quota_jobs_per_day: raw === "" ? null : Number(raw) });
+        toast("Đã cập nhật hạn mức của " + editing.username + ".");
+        closeDrawer();
+        load();
+      } catch (err) {
+        toast(err.message, "error");
+      }
+    });
+
+    document.getElementById("quotaClear").addEventListener("click", function () {
+      document.getElementById("quotaInput").value = "";
+    });
+
+    load();
+  })();
+</script>
+{% endblock %}

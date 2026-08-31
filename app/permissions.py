@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from functools import wraps
 
-from flask import jsonify
+from flask import abort, jsonify, redirect, url_for
 from flask_login import current_user
 
 from app.models import Role
@@ -30,6 +30,20 @@ def require_role(*roles: str):
         return wrapper
 
     return decorator
+
+
+def require_admin_page(view):
+    """Guard cho trang HTML. Khác require_admin ở chỗ trả trang lỗi 403 thay vì JSON."""
+
+    @wraps(view)
+    def wrapper(*args, **kwargs):
+        if not current_user.is_authenticated:
+            return redirect(url_for("auth.login"))
+        if not current_user.is_admin:
+            abort(403)
+        return view(*args, **kwargs)
+
+    return wrapper
 
 
 def require_admin(view):
