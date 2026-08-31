@@ -18,6 +18,11 @@ jobs:
           python-version: "3.12"
           cache: pip
 
+      - name: Cài ffmpeg
+        # Runner Ubuntu khong co san ffmpeg. Healthz kiem tra no, va bo test
+        # xu ly duoc ca hai truong hop — cai vao de chay ca nhanh "khoe manh".
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
+
       - name: Cài phụ thuộc
         # Bộ test không chạm tới GPU nên bỏ qua stack ML nặng (torch, whisper,
         # transformers) — cài đủ chúng sẽ mất vài GB và hơn mười phút.

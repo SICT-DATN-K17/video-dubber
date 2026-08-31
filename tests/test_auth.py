@@ -3,9 +3,8 @@ from __future__ import annotations
 
 import pytest
 
-from app.extensions import db
 from app.models import Role, User
-from tests.conftest import PASSWORD, login, make_user
+from tests.conftest import PASSWORD, make_user
 
 
 # ── Cấu trúc ứng dụng ────────────────────────────────────────
@@ -19,9 +18,17 @@ def test_session_hardening(app):
 
 
 def test_healthz(client):
+    """Healthz phải báo đúng theo môi trường đang chạy.
+
+    Máy dev hoặc CI có thể không cài ffmpeg — khi đó 503 mới là câu trả lời
+    đúng, không phải lỗi. Test kiểm tra logic, không đòi hỏi ffmpeg có mặt.
+    """
     response = client.get("/healthz")
-    assert response.status_code == 200
-    assert response.get_json()["checks"]["database"] is True
+    checks = response.get_json()["checks"]
+    assert checks["database"] is True
+
+    healthy = all(checks.values())
+    assert response.status_code == (200 if healthy else 503)
 
 
 # ── Đăng ký và đăng nhập ─────────────────────────────────────
