@@ -210,3 +210,11 @@ def test_admin_pages_redirect_anonymous(client, path):
 def test_sidebar_hides_admin_menu_from_normal_user(as_user, as_admin):
     assert "/quan-tri/thong-ke" not in as_user.get("/").get_data(as_text=True)
     assert "/quan-tri/thong-ke" in as_admin.get("/").get_data(as_text=True)
+
+
+def test_stats_page_loads_chart_js(as_admin):
+    """Ba biểu đồ vẽ bằng Chart.js trên canvas, không phải HTML dựng sẵn."""
+    html = as_admin.get("/quan-tri/thong-ke").get_data(as_text=True)
+    assert "cdnjs.cloudflare.com/ajax/libs/Chart.js/" in html
+    for chart_id in ["dailyChart", "engineChart", "stepChart"]:
+        assert f'<canvas id="{chart_id}">' in html
