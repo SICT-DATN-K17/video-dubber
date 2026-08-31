@@ -230,3 +230,25 @@ def job_progress(job_id: int):
             Job.query.filter(Job.status == JobStatus.QUEUED, Job.id < job.id).count()
         )
     return jsonify(payload)
+
+
+@bp.get("/jobs/<int:job_id>/segments")
+@login_required
+def job_segments(job_id: int):
+    """Transcript song ngữ đã có mốc thời gian của một job.
+
+    Job chạy trước khi có bảng này thì trả danh sách rỗng chứ không phải 404:
+    job vẫn tồn tại, chỉ là không còn transcript. Cờ `available` để giao diện
+    phân biệt "chưa từng lưu" với "video không có lời nào".
+    """
+    job = Job.query.filter_by(id=job_id, user_id=current_user.id).first()
+    if job is None:
+        return jsonify({"error": "Không tìm thấy job."}), 404
+
+    segments = job.segments.all()
+    return jsonify({
+        "job_id": job.id,
+        "count": len(segments),
+        "available": bool(segments),
+        "segments": [segment.to_dict() for segment in segments],
+    })

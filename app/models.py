@@ -172,3 +172,62 @@ class Job(db.Model):
 
     def __repr__(self) -> str:
         return f"<Job {self.id} {self.status} {self.progress}%>"
+
+
+class TranscriptSegment(db.Model):
+    """Một dòng phụ đề đã có mốc thời gian, song ngữ.
+
+    Trước đây nội dung này chỉ đi vào file .srt trên Volume: không truy vấn
+    được, và mất hẳn khi người dùng chọn subtitle_mode "vi" hoặc "none".
+    Database mới là nơi giữ nó — đây là nền cho sửa phụ đề, tóm tắt và hỏi đáp.
+
+    Tên khác với Segment trong core/transcriber.py cho khỏi nhầm: bên kia là
+    dataclass chạy trong bộ nhớ, bên này là bảng.
+    """
+
+    __tablename__ = "transcript_segment"
+
+    id = db.Column(db.Integer, primary_key=True)
+    job_id = db.Column(
+        db.Integer, db.ForeignKey("job.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+
+    #: Thu tu trong video, bat dau tu 0. Dung de trich dan "[#12]" khi hoi dap.
+    idx = db.Column(db.Integer, nullable=False)
+    start_sec = db.Column(db.Float, nullable=False)
+    end_sec = db.Column(db.Float, nullable=False)
+
+    text_en = db.Column(db.Text, nullable=False, default="", server_default="")
+    text_vi = db.Column(db.Text, nullable=False, default="", server_default="")
+
+    #: Nguoi dung da sua tay dong nay chua — phan biet ban may dich voi ban da duyet.
+    edited = db.Column(db.Boolean, nullable=False, default=False, server_default=db.text("false"))
+
+    job = db.relationship(
+        "Job",
+        backref=db.backref(
+            "segments",
+            order_by="TranscriptSegment.idx",
+            cascade="all, delete-orphan",
+            passive_deletes=True,
+            lazy="dynamic",
+        ),
+    )
+
+    __table_args__ = (
+        # Moi job chi co mot dong o moi vi tri; cung la index cho truy van theo thu tu.
+        db.UniqueConstraint("job_id", "idx", name="uq_transcript_segment_job_idx"),
+    )
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "idx": self.idx,
+            "start": round(self.start_sec, 3),
+            "end": round(self.end_sec, 3),
+            "en": self.text_en,
+            "vi": self.text_vi,
+            "edited": self.edited,
+        }
+
+    def __repr__(self) -> str:
+        return f"<TranscriptSegment job={self.job_id} #{self.idx}>"

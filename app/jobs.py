@@ -16,7 +16,7 @@ from urllib.parse import quote
 from flask import Flask
 
 from app.extensions import db
-from app.models import Job, JobStatus, utcnow
+from app.models import Job, JobStatus, TranscriptSegment, utcnow
 from app.quota import estimate_cost
 from config.settings import JOB_RUNNER, MODAL_APP_NAME
 from core.pipeline import DubbingConfig, DubbingPipeline
@@ -75,6 +75,39 @@ def cancel_job(flask_app: Flask, job: Job) -> bool:
     job.finished_at = utcnow()
     db.session.commit()
     return stopped
+
+
+# ── Transcript ───────────────────────────────────────────────────
+def save_segments(flask_app: Flask, job_id: int, segments) -> int:
+    """Ghi transcript song ngữ vào DB, thay bản cũ nếu job được chạy lại.
+
+    Không ném lỗi ra ngoài: tới bước này video đã lồng tiếng xong, mất
+    transcript chỉ là mất một tính năng chứ không phải hỏng cả job.
+    """
+    if not segments:
+        return 0
+
+    try:
+        TranscriptSegment.query.filter_by(job_id=job_id).delete(synchronize_session=False)
+        db.session.add_all(
+            [
+                TranscriptSegment(
+                    job_id=job_id,
+                    idx=idx,
+                    start_sec=float(segment.start),
+                    end_sec=float(segment.end),
+                    text_en=(segment.text or "").strip(),
+                    text_vi=(segment.translated or "").strip(),
+                )
+                for idx, segment in enumerate(segments)
+            ]
+        )
+        db.session.commit()
+        return len(segments)
+    except Exception:
+        db.session.rollback()
+        flask_app.logger.exception("Không lưu được transcript của job %s", job_id)
+        return 0
 
 
 # ── Thực thi ─────────────────────────────────────────────────────
@@ -141,6 +174,10 @@ def run_job(flask_app: Flask, job_id: int, video_path: Path, config: DubbingConf
             job.message = f"Xử lý thất bại: {reason}"[:500]
 
         db.session.commit()
+
+        # Ghi transcript SAU khi trạng thái job đã commit: video đã xong rồi,
+        # hỏng bước lưu transcript thì không được kéo theo mất kết quả.
+        save_segments(flask_app, job_id, result.segments)
 
         try:
             Path(video_path).unlink(missing_ok=True)
