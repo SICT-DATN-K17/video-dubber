@@ -308,12 +308,22 @@ Hạn mức mặc định (chỉnh bằng biến môi trường):
 - [ ] Logging có cấu trúc + request id thay `print()`, gắn Sentry
 - [ ] Vòng đời file trên R2, backup Postgres, gỡ 2 file `.mp4` khỏi git
 
-### Phase 7 — Test & CI (rải từ Phase 1)
+### Phase 7 — Test & CI ✅ (đã xong)
 
-- [ ] Unit test: `llm_common.parse_numbered_lines`, `subtitle_utils`, tách câu trong `transcriber.py`
-- [ ] API test với Flask test client + DB tạm
-- [ ] Smoke test `modal run` với video 5 giây (nightly, không chạy mỗi PR)
-- [ ] GitHub Actions: ruff + pytest
+- [x] **89 test pytest** trong `tests/`, chạy khoảng 30 giây
+- [x] API test với Flask test client, mỗi test một DB SQLite sạch
+- [x] Unit test phần lõi không cần Flask: fallback dịch, timeout lệnh ngoài, retry API
+- [x] GitHub Actions: chạy migration trên DB trống rồi chạy test, mỗi lần push
+- [x] `requirements-dev.txt` đủ để chạy test mà **không cần torch/whisper** — CI xong trong khoảng một phút
+- [ ] Smoke test `modal run` với video 5 giây (nightly, tốn GPU nên không chạy mỗi PR)
+
+Chạy test:
+
+	pytest
+
+Bộ test bao gồm cả những trường hợp bảo mật dễ bỏ sót: người dùng khác không xem,
+không huỷ, không xoá được job của mình; email Google chưa xác minh không chiếm được
+tài khoản; hạn mức chặn trước khi ghi file xuống đĩa.
 
 ## Tối ưu độ trễ
 
