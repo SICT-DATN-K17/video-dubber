@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html class="dark" lang="vi">
+
+<head>
+  <meta charset="utf-8">
+  <meta content="width=device-width, initial-scale=1.0" name="viewport">
+  <title>{{ code }} · DUB_STUDIO</title>
+  {% include '_head.html' %}
+</head>
+
+<body class="bg-background text-on-surface min-h-screen flex items-center justify-center p-lg selection:bg-primary-container selection:text-on-primary">
+
+  <main class="w-full max-w-md flex flex-col items-center text-center gap-md">
+    <a href="{{ url_for('main.index') }}"
+      class="font-headline-md text-headline-md font-bold tracking-tighter text-primary mb-md">DUB_STUDIO</a>
+
+    <span class="tabular text-[72px] leading-none text-outline">{{ code }}</span>
+
+    <h1 class="font-headline-lg text-headline-lg text-on-surface">{{ title }}</h1>
+    <p class="font-body-lg text-body-lg text-on-surface-variant leading-relaxed">{{ hint }}</p>
+
+    {% if detail %}
+    <p class="font-body-md text-body-md text-on-surface-variant bg-surface-container border border-outline-variant/40 rounded-xl px-4 py-3 w-full">
+      {{ detail }}
+    </p>
+    {% endif %}
+
+    <div class="flex flex-wrap items-center justify-center gap-3 mt-md">
+      {% if current_user.is_authenticated %}
+      <a href="{{ url_for('main.index') }}"
+        class="inline-flex items-center gap-2 bg-primary text-on-primary font-label-sm text-label-sm uppercase tracking-wider px-5 py-2.5 rounded-full font-bold">
+        <span class="material-symbols-outlined text-[18px]">home</span>Về trang chủ
+      </a>
+      <a href="{{ url_for('main.history') }}"
+        class="inline-flex items-center gap-2 border border-outline-variant text-on-surface-variant font-label-sm text-label-sm uppercase tracking-wider px-5 py-2.5 rounded-full hover:text-on-surface transition-colors">
+        <span class="material-symbols-outlined text-[18px]">history</span>Lịch sử
+      </a>
+      {% else %}
+      <a href="{{ url_for('auth.login') }}"
+        class="inline-flex items-center gap-2 bg-primary text-on-primary font-label-sm text-label-sm uppercase tracking-wider px-5 py-2.5 rounded-full font-bold">
+        <span class="material-symbols-outlined text-[18px]">login</span>Đăng nhập
+      </a>
+      {% endif %}
+    </div>
+  </main>
+
+</body>
+
+</html>

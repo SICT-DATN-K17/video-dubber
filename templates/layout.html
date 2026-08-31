@@ -11,8 +11,14 @@
 
 <body class="bg-background text-on-surface min-h-screen flex selection:bg-primary-container selection:text-on-primary">
 
+  {# Nền mờ khi mở menu trên điện thoại — bấm vào để đóng. #}
+  <div id="navBackdrop" class="hidden fixed inset-0 bg-black/60 z-40 lg:hidden"></div>
+
   {# ── Thanh điều hướng trái ─────────────────────────────── #}
-  <nav class="w-[240px] h-screen flex-col border-r border-outline-variant bg-background fixed left-0 top-0 z-50 hidden lg:flex">
+  {# Dưới 1024px thanh này trượt ra ngoài màn hình; nút ☰ ở thanh trên kéo nó vào. #}
+  <nav id="sidebar" aria-label="Điều hướng chính"
+    class="w-[240px] h-screen flex flex-col border-r border-outline-variant bg-background fixed left-0 top-0 z-50
+           -translate-x-full lg:translate-x-0 transition-transform duration-200 ease-out">
     <div class="px-md py-lg border-b border-outline-variant bg-surface-dim">
       <h1 class="font-headline-md text-headline-md font-bold text-on-surface tracking-tighter">DUB_STUDIO</h1>
       <p class="font-label-sm text-label-sm text-on-surface-variant uppercase mt-1">AI Dubbing Engine</p>
@@ -67,6 +73,18 @@
       </p>
       {% if current_user.is_admin %}
       <p class="font-label-sm text-label-sm text-primary uppercase mt-1">Quản trị viên</p>
+      <p class="font-label-sm text-label-sm text-on-surface-variant mt-2">Lượt hôm nay: không giới hạn</p>
+      {% else %}
+      {# Hạn mức nạp bằng /api/usage, ẩn cho tới khi có số thật để không nháy "—". #}
+      <div id="quotaBadge" class="hidden mt-3">
+        <div class="flex items-center justify-between gap-2 font-label-sm text-label-sm">
+          <span class="text-on-surface-variant">Lượt còn hôm nay</span>
+          <span id="quotaText" class="tabular text-on-surface"></span>
+        </div>
+        <div class="w-full h-1.5 bg-surface-container-high rounded-full overflow-hidden mt-1.5">
+          <div id="quotaBar" class="h-full bg-primary transition-all duration-500" style="width:0%"></div>
+        </div>
+      </div>
       {% endif %}
     </div>
   </nav>
@@ -74,8 +92,14 @@
   <main class="lg:ml-[240px] w-full flex flex-col min-h-screen">
     {# ── Thanh trên ──────────────────────────────────────── #}
     <header
-      class="w-full h-16 flex items-center justify-between px-lg border-b border-outline-variant bg-surface-container-lowest sticky top-0 z-40">
-      <a href="{{ url_for('main.index') }}" class="lg:hidden font-headline-md text-headline-md font-bold tracking-tighter">DUB_STUDIO</a>
+      class="w-full h-16 flex items-center justify-between px-lg border-b border-outline-variant bg-surface-container-lowest sticky top-0 z-30">
+      <div class="flex items-center gap-3 lg:hidden">
+        <button type="button" id="navToggle" aria-controls="sidebar" aria-expanded="false" aria-label="Mở menu"
+          class="-ml-2 p-2 text-on-surface-variant hover:text-on-surface transition-colors">
+          <span class="material-symbols-outlined">menu</span>
+        </button>
+        <a href="{{ url_for('main.index') }}" class="font-headline-md text-headline-md font-bold tracking-tighter">DUB_STUDIO</a>
+      </div>
       <div class="hidden lg:block"></div>
       <div class="flex items-center gap-4">
         <span class="material-symbols-outlined text-on-surface-variant">account_circle</span>
@@ -113,6 +137,57 @@
   </main>
 
   {% block scripts %}{% endblock %}
+
+  {# Nằm ngoài block scripts để trang con không ghi đè mất. #}
+  <script>
+    (function () {
+      // ── Menu trượt trên điện thoại ──────────────────────
+      const sidebar = document.getElementById("sidebar");
+      const backdrop = document.getElementById("navBackdrop");
+      const toggle = document.getElementById("navToggle");
+
+      function setNav(open) {
+        sidebar.classList.toggle("-translate-x-full", !open);
+        backdrop.classList.toggle("hidden", !open);
+        toggle.setAttribute("aria-expanded", String(open));
+        toggle.setAttribute("aria-label", open ? "Đóng menu" : "Mở menu");
+        // Khoá cuộn nền, nếu không ngón tay sẽ kéo trang phía sau thay vì menu.
+        document.body.classList.toggle("overflow-hidden", open);
+      }
+
+      toggle.addEventListener("click", function () {
+        setNav(sidebar.classList.contains("-translate-x-full"));
+      });
+      backdrop.addEventListener("click", function () { setNav(false); });
+      document.addEventListener("keydown", function (event) {
+        if (event.key === "Escape") setNav(false);
+      });
+
+      // ── Hạn mức còn lại ─────────────────────────────────
+      const badge = document.getElementById("quotaBadge");
+      if (!badge) return;   // admin không bị áp hạn mức
+
+      fetch("/api/usage")
+        .then(function (res) { return res.ok ? res.json() : null; })
+        .then(function (data) {
+          if (!data) return;
+          const jobs = data.jobs;
+          const used = Math.min(jobs.used, jobs.limit);
+          const percent = jobs.limit ? used / jobs.limit * 100 : 0;
+
+          document.getElementById("quotaText").textContent =
+            Math.max(0, jobs.limit - jobs.used) + "/" + jobs.limit;
+
+          const bar = document.getElementById("quotaBar");
+          bar.style.width = percent + "%";
+          if (percent >= 100) bar.classList.replace("bg-primary", "bg-error");
+          else if (percent >= 80) bar.classList.replace("bg-primary", "bg-tertiary");
+
+          badge.classList.remove("hidden");
+        })
+        .catch(function () { /* Thanh phụ trợ: hỏng thì im lặng, đừng chặn trang. */ });
+    })();
+  </script>
 </body>
 
 </html>
