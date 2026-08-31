@@ -6,6 +6,7 @@ import io
 import pytest
 
 import app.quota as quota_mod
+from app.admin import humanise_error
 from app.extensions import db
 from app.models import JobStatus, Role, User
 from app.quota import check_quota, estimate_cost
@@ -218,3 +219,51 @@ def test_stats_page_loads_chart_js(as_admin):
     assert "cdnjs.cloudflare.com/ajax/libs/Chart.js/" in html
     for chart_id in ["dailyChart", "engineChart", "stepChart"]:
         assert f'<canvas id="{chart_id}">' in html
+
+
+# ── Rút gọn thông báo lỗi ────────────────────────────────────
+def test_humanise_error_pulls_message_out_of_provider_payload():
+    """Gemini trả về nguyên cả dict; chỉ câu trong 'message' là đáng đọc."""
+    raw = (
+        "404 NOT_FOUND. {'error': {'code': 404, 'message': 'This model "
+        "models/gemini-2.5-flash is no longer available to new users.', "
+        "'status': 'NOT_FOUND'}}"
+    )
+    assert humanise_error(raw) == (
+        "404 NOT_FOUND: This model models/gemini-2.5-flash is no longer available to new users."
+    )
+
+
+def test_humanise_error_handles_json_style_quotes_and_noise():
+    assert humanise_error('RateLimitError: {"error": {"message": "Quota exceeded"}}') == (
+        "RateLimitError: Quota exceeded"
+    )
+    # Khong khop duoc thi giu nguyen van, chi go bot khoang trang.
+    assert humanise_error("ffmpeg  crashed\n  code 1") == "ffmpeg crashed code 1"
+    assert humanise_error(None) == ""
+
+
+def test_humanise_error_truncates():
+    assert len(humanise_error("x" * 500)) == 300
+
+
+# ── Sức khoẻ engine ──────────────────────────────────────────
+def test_engine_health_separates_unfinished_jobs(app, as_admin, user):
+    """Job đang chạy không được tính vào mẫu của tỷ lệ lỗi."""
+    with app.app_context():
+        make_job(user, translator_engine="gemini", status=JobStatus.DONE)
+        make_job(user, translator_engine="gemini", status=JobStatus.FAILED, error="boom")
+        make_job(user, translator_engine="gemini", status=JobStatus.PROCESSING)
+
+    row = as_admin.get("/api/admin/stats").get_json()["engine_health"]["gemini"]
+    assert row == {"total": 3, "done": 1, "failed": 1, "unfinished": 1}
+
+
+def test_last_error_reports_when_it_happened(app, as_admin, user):
+    with app.app_context():
+        make_job(user, translator_engine="gemini", status=JobStatus.FAILED,
+                 error="{'error': {'message': 'model gone'}}")
+
+    last = as_admin.get("/api/admin/stats").get_json()["last_error"]
+    assert last["error"] == "model gone"
+    assert last["at"]

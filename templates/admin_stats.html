@@ -57,7 +57,7 @@
   <div class="px-lg py-md border-b border-outline-variant/40">
     <h3 class="font-headline-md text-headline-md text-on-surface">Sức khoẻ công cụ dịch</h3>
   </div>
-  <div id="lastError" class="hidden mx-lg mt-md rounded-xl border border-error/40 bg-error-container/20 px-4 py-3 font-body-md text-body-md text-error"></div>
+  <div id="lastError" class="hidden mx-lg mt-md rounded-xl border px-4 py-3"></div>
   <div class="overflow-x-auto">
     <table class="w-full min-w-[640px]">
       <thead>
@@ -273,14 +273,22 @@
       }
       body.innerHTML = names.map(function (name) {
         const row = health[name];
-        const rate = row.total ? (row.failed / row.total * 100) : 0;
+        // Chỉ tính trên job đã kết thúc: job đang chạy hay bị huỷ chưa nói lên
+        // điều gì về engine, để vào mẫu sẽ làm tỷ lệ lỗi thấp giả.
+        const finished = row.done + row.failed;
+        const rate = finished ? (row.failed / finished * 100) : 0;
         const danger = rate >= 50;
+        const pending = row.unfinished
+          ? '<span class="font-label-sm text-label-sm text-on-surface-variant"> · ' + row.unfinished + " chưa xong</span>"
+          : "";
         return '<tr class="border-t border-outline-variant/30">' +
           '<td class="px-4 py-3 font-body-md text-body-md text-on-surface">' + escapeHtml(name) + "</td>" +
-          '<td class="px-4 py-3 tabular text-on-surface-variant">' + row.total + "</td>" +
+          '<td class="px-4 py-3 text-on-surface-variant"><span class="tabular">' + row.total + "</span>" + pending + "</td>" +
           '<td class="px-4 py-3 tabular text-primary">' + row.done + "</td>" +
           '<td class="px-4 py-3 tabular ' + (row.failed ? "text-error" : "text-on-surface-variant") + '">' + row.failed + "</td>" +
-          '<td class="px-4 py-3 tabular ' + (danger ? "text-error" : "text-on-surface-variant") + '">' + rate.toFixed(1) + "%</td>" +
+          '<td class="px-4 py-3 tabular ' + (danger ? "text-error" : "text-on-surface-variant") +
+            '" title="' + row.failed + "/" + finished + ' job đã kết thúc">' +
+            (finished ? rate.toFixed(1) + "%" : "—") + "</td>" +
           '<td class="px-4 py-3 tabular text-on-surface-variant">' +
             (speeds[name] ? speeds[name] + "s" : "—") + "</td></tr>";
       }).join("");
@@ -325,6 +333,42 @@
       });
     }
 
+    const FRESH_MS = 24 * 60 * 60 * 1000;
+
+    function timeAgo(iso) {
+      const minutes = Math.round((Date.now() - new Date(iso).getTime()) / 60000);
+      if (minutes < 1) return "vừa xong";
+      if (minutes < 60) return minutes + " phút trước";
+      const hours = Math.round(minutes / 60);
+      if (hours < 24) return hours + " giờ trước";
+      return Math.round(hours / 24) + " ngày trước";
+    }
+
+    /**
+     * Lỗi cũ vẫn đáng xem nhưng không đáng báo động: để nguyên khung đỏ mãi thì
+     * chỉ vài ngày là quen mắt và bỏ qua, đúng lúc có lỗi thật lại không nhận ra.
+     * Dựng bằng DOM thay vì innerHTML vì nội dung là chuỗi lỗi từ nhà cung cấp.
+     */
+    function renderLastError(info) {
+      if (!info) return;
+      const stale = Date.now() - new Date(info.at).getTime() > FRESH_MS;
+      const tone = stale ? "text-on-surface-variant" : "text-error";
+
+      const head = document.createElement("div");
+      head.className = "font-label-sm text-label-sm uppercase tracking-wider " + tone;
+      head.textContent = "Lỗi gần nhất · " + info.engine + " · job #" + info.job_id +
+        " · " + timeAgo(info.at);
+
+      const body = document.createElement("p");
+      body.className = "font-body-md text-body-md leading-relaxed " + tone;
+      body.textContent = info.error;
+
+      const box = document.getElementById("lastError");
+      box.className = "mx-lg mt-md rounded-xl border px-4 py-3 flex flex-col gap-1 " +
+        (stale ? "border-outline-variant/60 bg-surface-container-high/40" : "border-error/40 bg-error-container/20");
+      box.replaceChildren(head, body);
+    }
+
     function renderTopUsers(users) {
       const container = document.getElementById("topUsers");
       if (!users.length) {
@@ -352,14 +396,8 @@
         renderEngines(data.engine_health, data.engine_translate_seconds);
         renderSteps(data.avg_seconds_per_step);
         renderTopUsers(data.top_users);
+        renderLastError(data.last_error);
         document.getElementById("costNote").textContent = data.note;
-
-        if (data.last_error) {
-          const box = document.getElementById("lastError");
-          box.textContent = "Lỗi gần nhất (" + data.last_error.engine + ", job #" +
-            data.last_error.job_id + "): " + data.last_error.error;
-          box.classList.remove("hidden");
-        }
       } catch (err) {
         const box = document.getElementById("errorBox");
         box.textContent = err.message;

@@ -4,6 +4,7 @@ API quản trị: xem người dùng, đổi quyền, khoá tài khoản, thốn
 """
 from __future__ import annotations
 
+import re
 from datetime import datetime, timedelta, timezone
 
 from flask import Blueprint, jsonify, request
@@ -119,6 +120,27 @@ def config_status():
     )
 
 
+#: Bat lay gia tri cua khoa "message" trong payload loi cua nha cung cap.
+_MESSAGE_RE = re.compile(r"""["']message["']\s*:\s*(["'])(?P<text>.*?)\1(?=\s*[,}])""")
+
+
+def humanise_error(raw: str | None, *, limit: int = 300) -> str:
+    """Rút câu giải thích ra khỏi payload thô của nhà cung cấp.
+
+    Lỗi từ Gemini/OpenAI được lưu nguyên cả dict, ví dụ:
+        404 NOT_FOUND. {'error': {'code': 404, 'message': 'This model ...', 'status': ...}}
+    Chỉ câu trong "message" là đáng đọc; phần còn lại lặp lại mã lỗi đã có ở đầu chuỗi.
+    Không khớp được thì trả lại nguyên văn — thà xấu còn hơn giấu mất thông tin.
+    """
+    text = " ".join((raw or "").split())
+    match = _MESSAGE_RE.search(text)
+    if not match:
+        return text[:limit]
+    code = text.split("{", 1)[0].strip(" .:")
+    message = match.group("text").strip()
+    return (f"{code}: {message}" if code else message)[:limit]
+
+
 @bp.get("/admin/stats")
 @login_required
 @require_admin
@@ -177,12 +199,16 @@ def stats():
         .group_by(Job.translator_engine, Job.status)
         .all()
     ):
-        row = engine_health.setdefault(engine, {"total": 0, "done": 0, "failed": 0})
+        row = engine_health.setdefault(engine, {"total": 0, "done": 0, "failed": 0, "unfinished": 0})
         row["total"] += count
         if status == JobStatus.DONE:
             row["done"] += count
         elif status == JobStatus.FAILED:
             row["failed"] += count
+        else:
+            # Dang chay, dang xep hang, bi huy hay bi ngat — chua ket luan duoc gi
+            # ve engine, nen phai tach ra khoi mau tinh ty le loi.
+            row["unfinished"] += count
 
     # Thoi gian dich trung binh theo engine — so sanh MarianMT voi Gemini.
     engine_speed = {
@@ -244,7 +270,8 @@ def stats():
                 {
                     "job_id": last_error.id,
                     "engine": last_error.translator_engine,
-                    "error": " ".join((last_error.error or "").split())[:300],
+                    "error": humanise_error(last_error.error),
+                    "at": (last_error.finished_at or last_error.created_at).isoformat(),
                 }
                 if last_error
                 else None
