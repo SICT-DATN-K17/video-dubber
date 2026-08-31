@@ -1,0 +1,13 @@
+# Phu thuoc du de chay bo test: KHONG gom stack ML (torch, whisper,
+# transformers) vi test khong cham toi GPU. Cai day tren CI mat vai GB.
+Flask==3.1.3
+Werkzeug==3.1.8
+Flask-SQLAlchemy==3.1.1
+Flask-Login==0.6.3
+Flask-WTF==1.3.0
+Flask-Migrate==4.1.0
+Flask-Limiter==4.1.1
+Authlib==1.8.0
+requests==2.33.1
+python-dotenv==1.2.2
+pytest==9.1.1

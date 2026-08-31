@@ -1,0 +1,248 @@
+"""Vòng đời job: tạo, theo dõi, trang chi tiết, lịch sử, xoá."""
+from __future__ import annotations
+
+import io
+
+import pytest
+
+from app.extensions import db
+from app.jobs import cancel_job, mark_interrupted_jobs
+from app.models import Job, JobStatus
+from config.settings import OUTPUT_DIR
+from tests.conftest import make_job
+
+
+# ── Tải lên ──────────────────────────────────────────────────
+def test_upload_without_file_rejected(as_user):
+    response = as_user.post("/api/upload", data={})
+    assert response.status_code == 400
+    assert response.is_json
+
+
+def test_upload_wrong_format_rejected(as_user):
+    response = as_user.post(
+        "/api/upload",
+        data={"video": (io.BytesIO(b"fake"), "tailieu.txt")},
+        content_type="multipart/form-data",
+    )
+    assert response.status_code == 400
+    assert "Định dạng" in response.get_json()["error"]
+
+
+def test_create_page_keeps_every_field_the_api_reads(as_user):
+    """Đổi tên một trường trong template là upload gãy im lặng."""
+    body = as_user.get("/").get_data(as_text=True)
+    for field in ["video", "translator_engine", "whisper_model", "compute_device",
+                  "tts_engine", "tts_voice", "subtitle_mode", "original_volume",
+                  "gemini_api_key", "gemini_model", "openai_api_key", "openai_model",
+                  "csrf_token"]:
+        assert f'name="{field}"' in body, field
+
+
+# ── Theo dõi tiến trình ──────────────────────────────────────
+def test_progress_payload_shape(app, user):
+    with app.app_context():
+        job = make_job(user, translator_engine="gemini", translator_actual="marian",
+                       video_name="a.mp4", video_url="/media/output/a.mp4",
+                       elapsed_sec=22.6, transcribe_sec=6.4, tts_sec=3.2)
+        payload = job.to_progress_dict()
+    assert payload["timings"]["transcribe"] == 6.4
+    assert payload["fallback_used"] is True
+    assert payload["result"]["video_url"].endswith("a.mp4")
+
+
+def test_progress_hidden_from_other_users(app, as_other, user):
+    with app.app_context():
+        job_id = make_job(user).id
+    assert as_other.get(f"/api/progress/{job_id}").status_code == 404
+
+
+def test_queue_position_counts_jobs_ahead(app, as_user, user):
+    with app.app_context():
+        ids = [make_job(user, status=JobStatus.QUEUED, progress=1).id for _ in range(3)]
+    assert as_user.get(f"/api/progress/{ids[0]}").get_json()["queue_position"] == 0
+    assert as_user.get(f"/api/progress/{ids[2]}").get_json()["queue_position"] == 2
+
+
+def test_finished_job_has_no_queue_position(app, as_user, user):
+    with app.app_context():
+        job_id = make_job(user, video_url="/x", video_name="x").id
+    assert "queue_position" not in as_user.get(f"/api/progress/{job_id}").get_json()
+
+
+def test_restart_marks_running_jobs_interrupted(app, user):
+    with app.app_context():
+        make_job(user, status=JobStatus.PROCESSING, progress=40)
+        make_job(user, status=JobStatus.QUEUED, progress=1)
+
+    assert mark_interrupted_jobs(app) == 2
+    with app.app_context():
+        assert Job.query.filter(Job.status.in_(JobStatus.ACTIVE)).count() == 0
+        assert Job.query.filter_by(status=JobStatus.INTERRUPTED).count() == 2
+
+
+# ── Trang chi tiết ───────────────────────────────────────────
+def test_job_page_visible_to_owner_only(app, as_user, as_other, client, user):
+    with app.app_context():
+        job_id = make_job(user).id
+    assert as_user.get(f"/job/{job_id}").status_code == 200
+    assert as_other.get(f"/job/{job_id}").status_code == 404
+    assert client.get(f"/job/{job_id}").status_code == 302
+    assert as_user.get("/job/99999").status_code == 404
+
+
+def test_job_page_shows_result_and_timings(app, as_user, user):
+    with app.app_context():
+        job_id = make_job(
+            user, source_filename="bai-giang.mp4", translator_engine="gemini",
+            translator_actual="marian", segment_count=12, elapsed_sec=22.6,
+            estimated_cost_usd=0.0037, video_name="a.mp4", video_url="/media/output/a.mp4",
+            srt_name="a.srt", srt_url="/media/output/a.srt",
+            extract_sec=0.5, transcribe_sec=6.4, translate_sec=8.9, tts_sec=3.5, compose_sec=4.4,
+        ).id
+    body = as_user.get(f"/job/{job_id}").get_data(as_text=True)
+    assert "bai-giang.mp4" in body
+    assert "/media/output/a.mp4" in body
+    assert "chuyển sang MarianMT" in body     # cảnh báo fallback
+    assert "Thời gian từng bước" in body
+    assert "$0.0037" in body
+
+
+def test_job_page_shows_failure_reason(app, as_user, user):
+    with app.app_context():
+        job_id = make_job(
+            user, status=JobStatus.FAILED, progress=0,
+            message="Xử lý thất bại: 404 NOT_FOUND",
+            error="404 NOT_FOUND. This model is no longer available.",
+        ).id
+    body = as_user.get(f"/job/{job_id}").get_data(as_text=True)
+    assert "404 NOT_FOUND" in body
+    assert "Chi tiết kỹ thuật" in body
+
+
+def test_job_page_running_state_has_five_stages(app, as_user, user):
+    with app.app_context():
+        job_id = make_job(user, status=JobStatus.PROCESSING, progress=45, message="Đang dịch...").id
+    body = as_user.get(f"/job/{job_id}").get_data(as_text=True)
+    assert body.count("data-stage=") == 5
+    assert 'id="cancelBtn"' in body
+
+
+# ── Huỷ ──────────────────────────────────────────────────────
+def test_cancel_running_job(app, as_user, user):
+    with app.app_context():
+        job_id = make_job(user, status=JobStatus.PROCESSING, progress=45).id
+    assert as_user.post(f"/api/jobs/{job_id}/cancel").status_code == 200
+    with app.app_context():
+        assert db.session.get(Job, job_id).status == JobStatus.CANCELLED
+
+
+def test_cancel_finished_job_refused(app, as_user, user):
+    with app.app_context():
+        job_id = make_job(user).id
+    assert as_user.post(f"/api/jobs/{job_id}/cancel").status_code == 409
+
+
+def test_cancel_other_users_job_refused(app, as_other, user):
+    with app.app_context():
+        job_id = make_job(user, status=JobStatus.PROCESSING).id
+    assert as_other.post(f"/api/jobs/{job_id}/cancel").status_code == 404
+
+
+def test_thread_runner_reports_it_could_not_stop(app, user):
+    """Runner thread không dừng được giữa chừng — API phải nói thật."""
+    with app.app_context():
+        job = make_job(user, status=JobStatus.PROCESSING)
+        assert cancel_job(app, job) is False
+        assert db.session.get(Job, job.id).status == JobStatus.CANCELLED
+
+
+# ── Lịch sử ──────────────────────────────────────────────────
+@pytest.fixture()
+def many_jobs(app, user):
+    with app.app_context():
+        for i in range(25):
+            make_job(
+                user,
+                status=JobStatus.DONE if i % 3 else JobStatus.FAILED,
+                source_filename=f"bai-giang-{i:02d}.mp4",
+                translator_engine="gemini" if i % 5 == 0 else "marian",
+                elapsed_sec=20 + i,
+            )
+        make_job(user, status=JobStatus.PROCESSING, source_filename="dangchay.mp4")
+
+
+def test_history_page_renders(as_user):
+    body = as_user.get("/lich-su").get_data(as_text=True)
+    assert 'id="search"' in body
+    assert 'id="engineFilter"' in body
+    assert 'id="emptyState"' in body
+
+
+def test_history_lists_own_jobs_paginated(as_user, many_jobs):
+    data = as_user.get("/api/jobs").get_json()
+    assert data["total"] == 26
+    assert len(data["items"]) == 20
+    assert data["pages"] == 2
+    assert data["items"][0]["source_filename"] == "dangchay.mp4"   # mới nhất trước
+    assert len(as_user.get("/api/jobs?page=2").get_json()["items"]) == 6
+
+
+def test_history_isolated_between_users(as_other, many_jobs):
+    assert as_other.get("/api/jobs").get_json()["total"] == 0
+
+
+@pytest.mark.parametrize(
+    "query,expected",
+    [("status=failed", 9), ("engine=gemini", 5), ("q=giang-07", 1), ("q=khong-co-dau", 0)],
+)
+def test_history_filters(as_user, many_jobs, query, expected):
+    assert as_user.get(f"/api/jobs?{query}").get_json()["total"] == expected
+
+
+def test_history_combined_filters(as_user, many_jobs):
+    items = as_user.get("/api/jobs?status=done&engine=marian").get_json()["items"]
+    assert all(j["status"] == "done" and j["engine"] == "marian" for j in items)
+
+
+# ── Xoá ──────────────────────────────────────────────────────
+def test_delete_removes_row_and_files(app, as_user, user):
+    """Chỉ xoá bản ghi thì video vẫn nằm trên đĩa và vẫn tính vào hạn mức."""
+    OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+    video = OUTPUT_DIR / "xoa-thu.mp4"
+    srt = OUTPUT_DIR / "xoa-thu.srt"
+    video.write_bytes(b"fake video")
+    srt.write_text("1\n", encoding="utf-8")
+
+    with app.app_context():
+        job_id = make_job(user, video_name="xoa-thu.mp4", srt_name="xoa-thu.srt",
+                          video_url="/media/output/xoa-thu.mp4").id
+
+    response = as_user.delete(f"/api/jobs/{job_id}")
+    assert response.status_code == 200
+    assert response.get_json()["files_removed"] == 2
+    assert not video.exists()
+    assert not srt.exists()
+    with app.app_context():
+        assert db.session.get(Job, job_id) is None
+
+
+def test_cannot_delete_running_job(app, as_user, user):
+    with app.app_context():
+        job_id = make_job(user, status=JobStatus.PROCESSING).id
+    assert as_user.delete(f"/api/jobs/{job_id}").status_code == 409
+
+
+def test_cannot_delete_other_users_job(app, as_other, user):
+    with app.app_context():
+        job_id = make_job(user).id
+    assert as_other.delete(f"/api/jobs/{job_id}").status_code == 404
+    with app.app_context():
+        assert db.session.get(Job, job_id) is not None
+
+
+# ── Phục vụ file ─────────────────────────────────────────────
+def test_media_is_owner_only(app, as_other, user):
+    with app.app_context():
+        make_job(user, video_name="rieng.mp4", video_url="/media/output/rieng.mp4")
+    assert as_other.get("/media/output/rieng.mp4").status_code == 403
