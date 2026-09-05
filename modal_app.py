@@ -50,6 +50,8 @@ image = (
             "*.wav",
             ".venv/**",
             "venv/**",
+            "node_modules/**",  # chi dung luc build CSS tren may local
+            "assets/**",        # nguon cua static/css/app.css, image chi can ban da build
         ],
     )
 )

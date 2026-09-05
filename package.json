@@ -1,0 +1,13 @@
+{
+  "name": "video-dubber-css",
+  "private": true,
+  "description": "Chỉ để biên dịch Tailwind ra static/css/app.css. Không phải app Node.",
+  "scripts": {
+    "build:css": "tailwindcss -i assets/tailwind.css -o static/css/app.css --minify",
+    "watch:css": "tailwindcss -i assets/tailwind.css -o static/css/app.css --watch"
+  },
+  "devDependencies": {
+    "@tailwindcss/forms": "^0.5.9",
+    "tailwindcss": "^3.4.17"
+  }
+}

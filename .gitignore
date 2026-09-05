@@ -68,3 +68,7 @@ F5-TTS-Vietnamese/
 
 # Ban thiet ke tu Stitch (mockup tinh, khong deploy)
 design/
+
+# Node: chi dung de bien dich Tailwind, khong phai app Node.
+# static/css/app.css thi VAN commit — image Modal khong co Node de tu build.
+node_modules/

@@ -1,0 +1,31 @@
+/*
+ * Nguồn của static/css/app.css. Sửa file này rồi chạy `npm run build:css`.
+ * Đừng sửa thẳng file đã build — lần build sau sẽ ghi đè.
+ */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  /* Font icon chỉ có trục FILL (xem templates/_head.html), nên không đặt
+     'wght' hay 'GRAD' ở đây nữa: bản font đã lọc không mang các trục đó. */
+  .material-symbols-outlined {
+    font-variation-settings: "FILL" 0;
+  }
+
+  .material-symbols-outlined.filled {
+    font-variation-settings: "FILL" 1;
+  }
+
+  body {
+    background-color: #101416;
+    color: #e0e3e5;
+    font-family: "Be Vietnam Pro", sans-serif;
+  }
+
+  /* Chữ số thẳng cột trong bảng và biểu đồ. */
+  .tabular {
+    font-family: "JetBrains Mono", monospace;
+    font-variant-numeric: tabular-nums;
+  }
+}
