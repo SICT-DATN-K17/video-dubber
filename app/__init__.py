@@ -4,10 +4,11 @@ Application factory: dựng Flask app, nạp cấu hình, bind extension và blu
 """
 from __future__ import annotations
 
+import hashlib
 from datetime import timedelta
 from pathlib import Path
 
-from flask import Flask
+from flask import Flask, url_for
 from werkzeug.middleware.proxy_fix import ProxyFix
 
 from app.errors import register_error_handlers, register_unauthorized_handler
@@ -23,6 +24,28 @@ from config.settings import (
 )
 
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+
+def register_asset_helper(app: Flask) -> None:
+    """Cho template gọi asset('css/app.css') để lấy URL có gắn mã băm nội dung.
+
+    Cần mã băm vì file được cache một năm: không có nó thì sửa CSS xong người
+    dùng cũ vẫn thấy bản cũ cho tới khi tự xoá cache. Băm tính một lần lúc khởi
+    động — file tĩnh không đổi giữa chừng, và trên Modal thì mtime của file
+    trong image luôn là epoch 0 nên không dùng mtime được.
+    """
+    digests: dict[str, str] = {}
+
+    def asset(filename: str) -> str:
+        if filename not in digests:
+            path = Path(app.static_folder or "") / filename
+            try:
+                digests[filename] = hashlib.sha256(path.read_bytes()).hexdigest()[:10]
+            except OSError:
+                digests[filename] = "dev"
+        return url_for("static", filename=filename, v=digests[filename])
+
+    app.jinja_env.globals["asset"] = asset
 
 
 def create_app(config_overrides: dict | None = None) -> Flask:
@@ -41,9 +64,16 @@ def create_app(config_overrides: dict | None = None) -> Flask:
         PERMANENT_SESSION_LIFETIME=timedelta(days=SESSION_LIFETIME_DAYS),
         SQLALCHEMY_DATABASE_URI=SQLALCHEMY_DATABASE_URI,
         SQLALCHEMY_TRACK_MODIFICATIONS=False,
+        # Mac dinh cua Flask la "no-cache": moi lan chuyen trang trinh duyet
+        # van phai hoi lai server truoc khi ve duoc gi — tu Viet Nam la them
+        # nua giay cho mot vong di ve. Cache mot nam chi an toan vi asset()
+        # gan ma bam noi dung vao URL, doi file la doi URL.
+        SEND_FILE_MAX_AGE_DEFAULT=timedelta(days=365),
     )
     if config_overrides:
         app.config.update(config_overrides)
+
+    register_asset_helper(app)
 
     if TRUST_PROXY:
         # Modal dat mot proxy truoc container; khong co buoc nay thi rate limit

@@ -91,3 +91,17 @@ def test_built_css_is_up_to_date():
     assert BUILT_CSS.read_bytes() == before, (
         "static/css/app.css cũ hơn template — chạy `npm run build:css` rồi commit lại"
     )
+
+
+# ── Cache ────────────────────────────────────────────────────
+def test_css_url_carries_a_content_hash(client):
+    """Cache một năm chỉ an toàn khi URL đổi theo nội dung file."""
+    html = client.get("/login").get_data(as_text=True)
+    match = re.search(r"/static/css/app\.css\?v=([0-9a-f]{10})", html)
+    assert match, "URL của app.css phải kèm ?v=<mã băm>"
+
+
+def test_static_files_are_cached_long(app, client):
+    response = client.get("/static/css/app.css")
+    assert response.status_code == 200
+    assert response.cache_control.max_age and response.cache_control.max_age > 86_400
