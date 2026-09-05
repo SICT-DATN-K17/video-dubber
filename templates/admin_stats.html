@@ -1,4 +1,5 @@
 {% extends "layout.html" %}
+{% import "_skeleton.html" as skeleton %}
 {% block title %}Thống kê · DUB_STUDIO{% endblock %}
 
 {% block content %}
@@ -32,6 +33,7 @@
     {# Chart.js cần khung có chiều cao cố định vì maintainAspectRatio đang tắt. #}
     <div class="relative h-[240px]">
       <canvas id="dailyChart"></canvas>
+      <div data-skeleton="dailyChart" class="absolute inset-0 rounded-xl bg-surface-container-high animate-pulse"></div>
       <p data-empty="dailyChart"
         class="hidden absolute inset-0 items-center justify-center font-body-md text-body-md text-on-surface-variant">
         Chưa có dữ liệu
@@ -44,6 +46,7 @@
     <h3 class="font-headline-md text-headline-md text-on-surface">Theo công cụ dịch</h3>
     <div class="relative h-[240px]">
       <canvas id="engineChart"></canvas>
+      <div data-skeleton="engineChart" class="absolute inset-0 rounded-xl bg-surface-container-high animate-pulse"></div>
       <p data-empty="engineChart"
         class="hidden absolute inset-0 items-center justify-center font-body-md text-body-md text-on-surface-variant">
         Chưa có dữ liệu
@@ -67,7 +70,11 @@
           {% endfor %}
         </tr>
       </thead>
-      <tbody id="engineRows"></tbody>
+      <tbody id="engineRows">
+        {% for _ in range(3) %}
+        {{ skeleton.row(['w-20', 'w-10', 'w-10', 'w-10', 'w-12', 'w-14']) }}
+        {% endfor %}
+      </tbody>
     </table>
   </div>
 </div>
@@ -78,6 +85,7 @@
     <h3 class="font-headline-md text-headline-md text-on-surface">Thời gian trung bình từng bước</h3>
     <div class="relative h-[220px]">
       <canvas id="stepChart"></canvas>
+      <div data-skeleton="stepChart" class="absolute inset-0 rounded-xl bg-surface-container-high animate-pulse"></div>
       <p data-empty="stepChart"
         class="hidden absolute inset-0 items-center justify-center font-body-md text-body-md text-on-surface-variant">
         Chưa có dữ liệu
@@ -88,7 +96,14 @@
   {# ── Tốn nhiều nhất ──────────────────────────────────── #}
   <div class="bg-surface-container rounded-2xl border border-outline-variant/30 p-lg flex flex-col gap-md">
     <h3 class="font-headline-md text-headline-md text-on-surface">Tốn nhiều nhất</h3>
-    <div id="topUsers" class="flex flex-col gap-2"></div>
+    <div id="topUsers" class="flex flex-col gap-2">
+      {% for _ in range(5) %}
+      <div class="flex items-center justify-between gap-3 py-1">
+        {{ skeleton.line('w-32') }}
+        {{ skeleton.line('w-14') }}
+      </div>
+      {% endfor %}
+    </div>
   </div>
 </div>
 
@@ -147,8 +162,16 @@
       return "$" + value.toFixed(4);
     }
 
+    /** Ẩn khung xương của một canvas — gọi khi có dữ liệu thật lẫn khi rỗng/lỗi,
+     * vì cả ba trường hợp đều là "hết chờ", chỉ khác nhau hiện gì tiếp theo. */
+    function hideSkeleton(id) {
+      const el = document.querySelector('[data-skeleton="' + id + '"]');
+      if (el) el.classList.add("hidden");
+    }
+
     /** Ẩn canvas, hiện dòng "Chưa có dữ liệu" của đúng biểu đồ đó. */
     function showEmpty(id) {
+      hideSkeleton(id);
       document.getElementById(id).classList.add("hidden");
       document.querySelector('[data-empty="' + id + '"]').classList.replace("hidden", "flex");
     }
@@ -171,6 +194,7 @@
     /** Cột = số job, đường = chi phí. Hai trục Y riêng vì đơn vị khác nhau. */
     function renderDaily(daily) {
       if (!daily.length) return showEmpty("dailyChart");
+      hideSkeleton("dailyChart");
 
       new Chart(document.getElementById("dailyChart"), {
         data: {
@@ -242,6 +266,7 @@
       const values = names.map(function (name) { return byEngine[name]; });
       const total = values.reduce(function (sum, v) { return sum + v; }, 0);
       if (!total) return showEmpty("engineChart");
+      hideSkeleton("engineChart");
 
       new Chart(document.getElementById("engineChart"), {
         type: "doughnut",
@@ -307,6 +332,7 @@
     function renderSteps(steps) {
       const keys = Object.keys(STEP_LABELS).filter(function (key) { return steps[key]; });
       if (!keys.length) return showEmpty("stepChart");
+      hideSkeleton("stepChart");
 
       new Chart(document.getElementById("stepChart"), {
         type: "bar",
@@ -410,6 +436,10 @@
         renderLastError(data.last_error);
         document.getElementById("costNote").textContent = data.note;
       } catch (err) {
+        // Nếu fetch hỏng thì các hàm render* ở trên chưa kịp chạy — không có
+        // ai tắt khung xương của ba biểu đồ, chúng sẽ nhấp nháy mãi mãi cạnh
+        // banner lỗi nếu không dọn ở đây.
+        ["dailyChart", "engineChart", "stepChart"].forEach(hideSkeleton);
         const box = document.getElementById("errorBox");
         box.textContent = err.message;
         box.classList.remove("hidden");

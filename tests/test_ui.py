@@ -67,3 +67,33 @@ def test_english_werkzeug_description_is_not_shown(as_user):
     """abort(404) không kèm mô tả riêng thì không hiện câu tiếng Anh mặc định."""
     html = as_user.get("/khong-co-trang-nay").get_data(as_text=True)
     assert "Not Found" not in html
+
+
+# ── Khung xương lúc chờ dữ liệu ──────────────────────────────
+# Ba trang admin nạp nội dung bằng fetch() sau khi trang đã hiện. Không có
+# khung xương thì mạng chậm (đúng lúc người dùng thấy trang "load lâu") để lộ
+# khoảng trắng vài giây trước khi bảng/biểu đồ hiện ra. Render sẵn trong HTML
+# gốc — không đợi JS thêm vào — vì JS cũng phải tải xong mới chạy được.
+def test_admin_stats_renders_skeleton_before_data_arrives(as_admin):
+    html = as_admin.get("/quan-tri/thong-ke").get_data(as_text=True)
+    assert 'data-skeleton="dailyChart"' in html
+    assert 'data-skeleton="engineChart"' in html
+    assert 'data-skeleton="stepChart"' in html
+    assert html.count("animate-pulse") >= 3 + 3 + 5  # 3 hàng engineRows + 5 dòng topUsers
+
+
+def test_admin_users_renders_skeleton_rows(as_admin):
+    html = as_admin.get("/quan-tri/nguoi-dung").get_data(as_text=True)
+    assert html.count("animate-pulse") >= 6  # 6 hàng khung xương trong <tbody>
+
+
+def test_admin_system_renders_skeleton_cards(as_admin):
+    html = as_admin.get("/quan-tri/he-thong").get_data(as_text=True)
+    assert "animate-pulse" in html
+
+
+def test_history_page_already_has_its_own_skeleton(as_user):
+    """Mẫu animate-pulse này có từ trước — ba trang admin ở trên chỉ làm theo
+    đúng kiểu đã có, không phải bịa ra một kiểu mới."""
+    html = as_user.get("/lich-su").get_data(as_text=True)
+    assert "animate-pulse" in html

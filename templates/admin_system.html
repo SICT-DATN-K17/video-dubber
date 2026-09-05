@@ -1,4 +1,5 @@
 {% extends "layout.html" %}
+{% import "_skeleton.html" as skeleton %}
 {% block title %}Hệ thống · DUB_STUDIO{% endblock %}
 
 {% block content %}
@@ -14,12 +15,27 @@
 
 {# ── Công cụ dịch ──────────────────────────────────────── #}
 <h3 class="font-headline-md text-headline-md text-on-surface mb-md">Công cụ dịch</h3>
-<div id="engines" class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-lg"></div>
+<div id="engines" class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-lg">
+  {% for _ in range(3) %}
+  <div class="bg-surface-container rounded-2xl border border-outline-variant/30 p-lg flex flex-col gap-2">
+    <div class="flex items-center justify-between gap-2">{{ skeleton.line('w-24', 'h-5') }}{{ skeleton.line('w-20', 'h-5') }}</div>
+    {{ skeleton.line('w-32') }}
+    {{ skeleton.line('w-40') }}
+  </div>
+  {% endfor %}
+</div>
 
 {# ── Hạ tầng ───────────────────────────────────────────── #}
 <h3 class="font-headline-md text-headline-md text-on-surface mb-md">Hạ tầng</h3>
 <div class="bg-surface-container rounded-2xl border border-outline-variant/30 p-lg mb-lg">
-  <div id="health" class="grid grid-cols-2 md:grid-cols-4 gap-4"></div>
+  <div id="health" class="grid grid-cols-2 md:grid-cols-4 gap-4">
+    {% for _ in range(3) %}
+    <div class="flex items-center gap-3">
+      <div class="w-3 h-3 rounded-full bg-surface-container-highest animate-pulse flex-shrink-0"></div>
+      <div class="flex flex-col gap-1">{{ skeleton.line('w-16', 'h-4') }}{{ skeleton.line('w-20', 'h-3') }}</div>
+    </div>
+    {% endfor %}
+  </div>
   <p id="checkedAt" class="font-label-sm text-label-sm text-on-surface-variant mt-md"></p>
 </div>
 
@@ -27,7 +43,11 @@
   {# ── Hạn mức mặc định ────────────────────────────────── #}
   <div class="bg-surface-container rounded-2xl border border-outline-variant/30 p-lg">
     <h3 class="font-headline-md text-headline-md text-on-surface mb-md">Hạn mức mặc định</h3>
-    <dl id="quotas" class="flex flex-col gap-3"></dl>
+    <dl id="quotas" class="flex flex-col gap-3">
+      {% for _ in range(3) %}
+      <div class="flex items-center justify-between gap-3">{{ skeleton.line('w-28') }}{{ skeleton.line('w-12') }}</div>
+      {% endfor %}
+    </dl>
     <p class="font-label-sm text-label-sm text-on-surface-variant mt-md leading-relaxed">
       Đổi bằng biến môi trường trong Modal secret, không sửa được từ giao diện.
       Admin không bị áp hạn mức.
@@ -37,7 +57,11 @@
   {# ── Môi trường chạy ─────────────────────────────────── #}
   <div class="bg-surface-container rounded-2xl border border-outline-variant/30 p-lg">
     <h3 class="font-headline-md text-headline-md text-on-surface mb-md">Môi trường chạy</h3>
-    <dl id="runtime" class="flex flex-col gap-3"></dl>
+    <dl id="runtime" class="flex flex-col gap-3">
+      {% for _ in range(2) %}
+      <div class="flex items-center justify-between gap-3">{{ skeleton.line('w-28') }}{{ skeleton.line('w-16') }}</div>
+      {% endfor %}
+    </dl>
     <a href="https://modal.com/apps" target="_blank" rel="noopener"
       class="inline-flex items-center gap-1 mt-md text-primary font-label-sm text-label-sm uppercase tracking-wider hover:underline">
       Xem hoá đơn thật trên Modal
@@ -137,6 +161,11 @@
         document.getElementById("checkedAt").textContent =
           "Kiểm tra lúc " + new Date().toLocaleTimeString("vi-VN");
       } catch (err) {
+        // Chưa hàm render* nào chạy được nếu fetch hỏng ở đây — bốn khung
+        // xương sẽ nhấp nháy mãi cạnh banner lỗi nếu không dọn tay.
+        ["engines", "health", "quotas", "runtime"].forEach(function (id) {
+          document.getElementById(id).innerHTML = "";
+        });
         const box = document.getElementById("errorBox");
         box.textContent = err.message;
         box.classList.remove("hidden");

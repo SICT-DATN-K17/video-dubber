@@ -1,4 +1,5 @@
 {% extends "layout.html" %}
+{% import "_skeleton.html" as skeleton %}
 {% block title %}Người dùng · DUB_STUDIO{% endblock %}
 
 {% block content %}
@@ -25,7 +26,11 @@
           {% endfor %}
         </tr>
       </thead>
-      <tbody id="rows"></tbody>
+      <tbody id="rows">
+        {% for _ in range(6) %}
+        {{ skeleton.row(['w-28', 'w-20', 'w-20', 'w-14', 'w-12', 'w-14', 'w-16', 'w-6']) }}
+        {% endfor %}
+      </tbody>
     </table>
   </div>
 </div>
@@ -158,6 +163,11 @@
         render();
       } catch (err) {
         toast(err.message, "error");
+        // Không có dòng này thì khung xương ở trên nhấp nháy mãi mãi: toast tự
+        // ẩn sau 4 giây còn bảng thì chưa ai gọi render() để đè lên nó.
+        document.getElementById("rows").innerHTML =
+          '<tr><td colspan="8" class="px-4 py-6 text-center font-body-md text-body-md text-error">' +
+          escapeHtml(err.message) + "</td></tr>";
       }
     }
 

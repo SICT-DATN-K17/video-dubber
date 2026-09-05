@@ -1,0 +1,28 @@
+{# ── Khung xương lúc chờ dữ liệu ─────────────────────────────
+   Dùng chung cho mọi vùng nội dung nạp bằng fetch() sau khi trang đã hiện.
+   Cùng một kiểu đã có sẵn ở templates/history.html — gộp lại đây để không
+   viết lại HTML skeleton bốn lần. `animate-pulse` là utility có sẵn của
+   Tailwind, tự tắt khi trình duyệt bật prefers-reduced-motion.
+
+   Vẽ SẴN trong HTML server render, không phải JS thêm vào: nếu chỉ thêm
+   bằng JS thì đúng lúc mạng chậm — lý do ban đầu khiến trang "có cảm giác
+   load lâu" — người dùng vẫn thấy khoảng trắng trong lúc JS còn đang tải.
+   Trang con chỉ cần gọi macro, phần lớn không cần sửa gì thêm: các hàm
+   render() sẵn có đã gán lại innerHTML khi dữ liệu về, tự đè lên khung
+   xương mà không cần thêm dòng code nào. #}
+
+{% macro row(widths) %}
+<tr class="border-t border-outline-variant/30">
+  {% for w in widths %}
+  <td class="px-4 py-3"><div class="h-4 {{ w }} rounded-md bg-surface-container-high animate-pulse"></div></td>
+  {% endfor %}
+</tr>
+{% endmacro %}
+
+{% macro line(width='w-full', height='h-4') %}
+<div class="{{ height }} {{ width }} rounded-md bg-surface-container-high animate-pulse"></div>
+{% endmacro %}
+
+{% macro block(height='h-24') %}
+<div class="{{ height }} w-full rounded-2xl bg-surface-container-high animate-pulse"></div>
+{% endmacro %}
