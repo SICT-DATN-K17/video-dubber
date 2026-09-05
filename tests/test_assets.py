@@ -20,34 +20,11 @@ BUILT_CSS = ROOT / "static" / "css" / "app.css"
 ICON_IN_TEMPLATE = re.compile(r"material-symbols-outlined[^<>]*>\s*([a-z_0-9]+)")
 
 
-def icons_used() -> set[str]:
-    return {
-        name
-        for path in TEMPLATES.rglob("*.html")
-        for name in ICON_IN_TEMPLATE.findall(path.read_text(encoding="utf-8"))
-    }
-
-
 def icons_requested() -> set[str]:
     head = (TEMPLATES / "_head.html").read_text(encoding="utf-8")
     match = re.search(r"icon_names=([a-z_0-9,]+)", head)
     assert match, "_head.html phải lọc icon bằng icon_names, không tải cả bộ font"
     return set(match.group(1).split(","))
-
-
-def test_every_icon_used_is_requested():
-    """Thiếu tên trong icon_names thì icon hiện ra thành chữ, không ai báo lỗi."""
-    missing = icons_used() - icons_requested()
-    assert not missing, (
-        "Icon dùng trong template nhưng chưa khai trong icon_names của _head.html: "
-        + ", ".join(sorted(missing))
-    )
-
-
-def test_no_unused_icons_requested():
-    """Icon thừa thì font phình ra mà không ai dùng."""
-    unused = icons_requested() - icons_used()
-    assert not unused, "icon_names khai thừa: " + ", ".join(sorted(unused))
 
 
 def test_icon_font_is_subset_not_whole_family():
@@ -105,3 +82,67 @@ def test_static_files_are_cached_long(app, client):
     response = client.get("/static/css/app.css")
     assert response.status_code == 200
     assert response.cache_control.max_age and response.cache_control.max_age > 86_400
+
+
+# ── Icon truyền qua biến Jinja ─────────────────────────────────
+# Đọc mã nguồn thô bằng regex bỏ sót icon đến từ macro (index.html stat_row),
+# dict trạng thái (job.html STATUS), hay vòng lặp (layout.html nav_items,
+# auth_layout.html) — ở những chỗ đó span chỉ chứa `{{ icon }}`, không phải
+# tên icon literal. Bài học thực tế: 13 icon từng lọt lưới kiểu này và vỡ ra
+# production (hourglass_top, payments, bolt, schedule, sync, check_circle,
+# cancel, warning, mic, translate, balance, diamond, add_circle) — trình
+# duyệt không thấy ligature nên in ra chữ HOA của tên biến, y hệt ảnh chụp
+# màn hình người dùng báo lại.
+#
+# Cách chắc ăn duy nhất: RENDER thật các trang qua nhiều trạng thái khác nhau
+# rồi soi đúng HTML đã render — lúc đó mọi {{ icon }} đều đã thành chữ literal.
+# Dùng kết quả render này cho CẢ HAI chiều (thiếu lẫn thừa) — so icon dùng
+# thật với icon_names, không so với bản đọc mã nguồn tĩnh vốn luôn thiếu.
+JOB_STATUSES = ["queued", "processing", "done", "failed", "cancelled", "interrupted"]
+
+
+def rendered_icon_names(html: str) -> set[str]:
+    return set(ICON_IN_TEMPLATE.findall(html))
+
+
+def all_icons_actually_rendered(app, client, as_user, as_admin, user) -> set[str]:
+    from tests.conftest import make_job
+
+    found: set[str] = set()
+
+    for path in ["/login", "/register", "/privacy", "/terms"]:
+        found |= rendered_icon_names(client.get(path).get_data(as_text=True))
+
+    for path in ["/", "/lich-su"]:
+        found |= rendered_icon_names(as_user.get(path).get_data(as_text=True))
+
+    with app.app_context():
+        job_ids = [make_job(user, status=status).id for status in JOB_STATUSES]
+    for job_id in job_ids:
+        found |= rendered_icon_names(as_user.get(f"/job/{job_id}").get_data(as_text=True))
+
+    for path in ["/quan-tri/thong-ke", "/quan-tri/nguoi-dung", "/quan-tri/he-thong"]:
+        found |= rendered_icon_names(as_admin.get(path).get_data(as_text=True))
+
+    # error.html có hai nhánh khác nhau (đã đăng nhập / khách vãng lai) —
+    # phải gọi cả hai, thiếu nhánh nào thì icon riêng của nhánh đó lọt lưới.
+    found |= rendered_icon_names(as_user.get("/khong-ton-tai").get_data(as_text=True))
+    found |= rendered_icon_names(client.get("/khong-ton-tai").get_data(as_text=True))
+    return found
+
+
+def test_every_rendered_icon_is_requested(app, client, as_user, as_admin, user):
+    """Thiếu tên trong icon_names thì icon hiện ra thành chữ HOA, trang vẫn trả 200."""
+    found = all_icons_actually_rendered(app, client, as_user, as_admin, user)
+    missing = found - icons_requested()
+    assert not missing, (
+        "Trang đã render dùng icon nhưng _head.html chưa lọc — sẽ hiện ra thành "
+        "chữ HOA trên production: " + ", ".join(sorted(missing))
+    )
+
+
+def test_no_unused_icons_requested(app, client, as_user, as_admin, user):
+    """Icon thừa thì font phình ra mà không trang nào thật sự render tới."""
+    found = all_icons_actually_rendered(app, client, as_user, as_admin, user)
+    unused = icons_requested() - found
+    assert not unused, "icon_names khai thừa, không trang nào dùng tới: " + ", ".join(sorted(unused))
