@@ -35,6 +35,14 @@
 {# ── Đang chờ hoặc đang chạy ───────────────────────────── #}
 <section id="liveCard"
   class="{% if job.is_finished %}hidden {% endif %}bg-surface-container rounded-3xl p-lg border border-outline-variant/30 flex flex-col gap-md mb-lg">
+  {# Ẩn mặc định — chỉ hiện khi vài lần lấy tiến trình liên tiếp đều lỗi.
+     Không phải lỗi thật: job vẫn chạy trên server, chỉ là trình duyệt tạm
+     thời không lấy được tiến trình. #}
+  <p id="reconnectBanner" class="hidden items-center gap-2 font-label-sm text-label-sm text-tertiary">
+    <span class="material-symbols-outlined text-[16px] animate-spin">sync</span>
+    Mất kết nối tạm thời — đang thử kết nối lại...
+  </p>
+
   <div class="flex items-center justify-between">
     <p id="progressText" class="font-body-lg text-body-lg text-on-surface-variant">{{ job.message }}</p>
     <span id="progressPct" class="tabular text-headline-md font-headline-md text-primary">{{ job.progress }}%</span>
@@ -226,11 +234,59 @@
         "Đã chạy " + String(Math.floor(s / 60)).padStart(2, "0") + ":" + String(s % 60).padStart(2, "0");
     }, 1000);
 
-    const poller = setInterval(async function () {
+    // ── Lấy tiến trình định kỳ ─────────────────────────────
+    // Tự lên lịch lượt kế tiếp SAU khi lượt hiện tại xong (thành công hay
+    // lỗi), thay vì setInterval bắn cố định — nếu một lượt bị treo (mạng
+    // rớt) thì setInterval cũ sẽ chồng thêm lượt mới mỗi 1,5 giây trong khi
+    // lượt cũ vẫn treo; cách này đợi lượt cũ kết thúc (timeout 10 giây) rồi
+    // mới bắn lượt sau.
+    //
+    // Mất mạng vài giây là chuyện thường trên di động (đổi từ wifi sang 4G,
+    // vào thang máy...) — job vẫn chạy tốt trên server, nên KHÔNG dừng hẳn
+    // ở đây, chỉ báo "đang thử lại" và tiếp tục. Chỉ dừng thật khi: đã sai
+    // liên tục quá lâu (server có thể đã hỏng thật), hoặc lỗi không thể tự
+    // phục hồi bằng cách thử lại (401 hết phiên, 404 job không còn).
+    const POLL_INTERVAL_MS = 1500;
+    const REQUEST_TIMEOUT_MS = 10000;
+    const MAX_CONSECUTIVE_FAILURES = 40; // ~ngưỡng 1 phút mất mạng liên tục
+
+    let consecutiveFailures = 0;
+    let stopped = false;
+
+    function showReconnecting(show) {
+      const el = document.getElementById("reconnectBanner");
+      if (show) el.classList.replace("hidden", "flex");
+      else el.classList.replace("flex", "hidden");
+    }
+
+    function stopPolling() {
+      stopped = true;
+    }
+
+    async function pollOnce() {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(function () { controller.abort(); }, REQUEST_TIMEOUT_MS);
+
       try {
-        const res = await fetch("/api/progress/" + JOB_ID);
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || "Không lấy được tiến trình.");
+        const res = await fetch("/api/progress/" + JOB_ID, { signal: controller.signal });
+        const data = await res.json().catch(function () { return {}; });
+
+        // 401/404 không tự khỏi bằng cách thử lại — dừng hẳn, đừng lặp mãi vô ích.
+        if (res.status === 401) {
+          showReconnecting(false);
+          document.getElementById("progressText").textContent =
+            "Phiên đăng nhập đã hết hạn. Tải lại trang để đăng nhập lại.";
+          return stopPolling();
+        }
+        if (res.status === 404) {
+          showReconnecting(false);
+          document.getElementById("progressText").textContent = data.error || "Không tìm thấy job.";
+          return stopPolling();
+        }
+        if (!res.ok) throw new Error(data.error || "Lỗi tạm thời khi lấy tiến trình.");
+
+        consecutiveFailures = 0;
+        showReconnecting(false);
 
         document.getElementById("progressBar").style.width = data.progress + "%";
         document.getElementById("progressPct").textContent = data.progress + "%";
@@ -245,15 +301,34 @@
         }
 
         if (["done", "failed", "cancelled", "interrupted"].indexOf(data.status) !== -1) {
-          clearInterval(poller);
+          stopPolling();
           // Tải lại để render bằng dữ liệu thật từ server, khỏi dựng lại toàn bộ giao diện bằng JS.
           window.location.reload();
         }
       } catch (err) {
-        clearInterval(poller);
-        document.getElementById("progressText").textContent = err.message;
+        consecutiveFailures += 1;
+        if (consecutiveFailures >= MAX_CONSECUTIVE_FAILURES) {
+          showReconnecting(false);
+          document.getElementById("progressText").textContent =
+            "Mất kết nối quá lâu. Tải lại trang để xem tiến trình mới nhất.";
+          stopPolling();
+        } else {
+          // Không đổi progressText — giữ nguyên thông báo tiến trình gần nhất,
+          // chỉ thêm banner nhỏ báo đang thử lại, đỡ trông như job đã hỏng.
+          showReconnecting(true);
+        }
+      } finally {
+        clearTimeout(timeoutId);
+        if (!stopped) setTimeout(pollOnce, POLL_INTERVAL_MS);
       }
-    }, 1500);
+    }
+
+    // Vừa có mạng lại thì thử ngay, không đợi tới nhịp kế tiếp.
+    window.addEventListener("online", function () {
+      if (!stopped) pollOnce();
+    });
+
+    setTimeout(pollOnce, POLL_INTERVAL_MS);
   })();
 </script>
 {% endblock %}

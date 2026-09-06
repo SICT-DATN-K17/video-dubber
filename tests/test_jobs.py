@@ -128,6 +128,40 @@ def test_job_page_running_state_has_five_stages(app, as_user, user):
     assert 'id="cancelBtn"' in body
 
 
+# Lỗi thật (mất mạng vài giây khi đi cầu thang máy, đổi wifi sang 4G...) không
+# tự chạy được trong pytest — không có trình duyệt để giả lập fetch() gãy giữa
+# chừng. Test dưới đây canh CẤU TRÚC mã đã gửi cho trình duyệt: đúng cơ chế
+# phục hồi có mặt, và mẫu cũ (một lần lỗi là dừng polling vĩnh viễn) đã biến
+# mất — không canh được hành vi runtime thì ít nhất canh không tái diễn lỗi cũ.
+def test_job_page_polling_recovers_instead_of_dying_on_first_error(app, as_user, user):
+    with app.app_context():
+        job_id = make_job(user, status=JobStatus.PROCESSING, progress=45).id
+    body = as_user.get(f"/job/{job_id}").get_data(as_text=True)
+
+    # Cơ chế phục hồi phải có mặt.
+    assert 'id="reconnectBanner"' in body
+    assert "AbortController" in body
+    assert "MAX_CONSECUTIVE_FAILURES" in body
+    assert 'window.addEventListener("online"' in body
+
+    # 401/404 là lỗi không tự khỏi bằng cách thử lại — phải dừng hẳn, không lặp mãi.
+    assert "res.status === 401" in body
+    assert "res.status === 404" in body
+
+    # Mẫu cũ: bắt được lỗi là clearInterval ngay, không phân biệt tạm thời
+    # hay vĩnh viễn. Không được còn dòng nào như vậy.
+    assert "clearInterval(poller)" not in body
+
+
+def test_finished_job_page_has_no_polling_script(app, as_user, user):
+    """Job đã xong thì không cần lấy tiến trình nữa — đỡ tốn request vô ích."""
+    with app.app_context():
+        job_id = make_job(user, status=JobStatus.DONE, progress=100).id
+    body = as_user.get(f"/job/{job_id}").get_data(as_text=True)
+    assert 'id="reconnectBanner"' in body  # markup vẫn render, chỉ là JS không chạy tới
+    assert "if (FINISHED) return;" in body
+
+
 # ── Huỷ ──────────────────────────────────────────────────────
 def test_cancel_running_job(app, as_user, user):
     with app.app_context():
