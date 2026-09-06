@@ -112,7 +112,18 @@
         {% set label_class = "font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider mb-1 block" %}
 
         <div>
-          <label class="{{ label_class }}" for="whisper_model_select">Mô hình Whisper</label>
+          <div class="flex items-center gap-1.5 mb-1">
+            <label class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider" for="whisper_model_select">Mô hình Whisper</label>
+            <button type="button" class="info-toggle text-on-surface-variant hover:text-primary transition-colors flex items-center"
+              data-tip="whisperTip" aria-expanded="false" aria-label="Giải thích các mô hình Whisper">
+              <span class="material-symbols-outlined text-[16px]">info</span>
+            </button>
+          </div>
+          <p id="whisperTip" class="hidden font-body-md text-body-md text-on-surface-variant bg-surface-container-high rounded-lg px-3 py-2 mb-2 leading-relaxed">
+            Mô hình càng lớn thì nhận dạng giọng nói càng chính xác — nhất là với thuật ngữ chuyên ngành,
+            giọng vùng miền, hay video có tạp âm — nhưng xử lý càng lâu. Tiny và Base hợp video giọng rõ,
+            nói chậm; Medium và Large hợp bài giảng nhiều thuật ngữ khó hoặc âm thanh không tốt.
+          </p>
           <select id="whisper_model_select" class="{{ field_class }}">
             {% for value, text in [('tiny','Tiny — nhanh nhất'), ('base','Base'), ('small','Small'), ('medium','Medium'), ('large','Large — chính xác nhất')] %}
             <option value="{{ value }}">{{ text }}</option>
@@ -121,7 +132,18 @@
         </div>
 
         <div>
-          <label class="{{ label_class }}" for="translator_engine_select">Công cụ dịch</label>
+          <div class="flex items-center gap-1.5 mb-1">
+            <label class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider" for="translator_engine_select">Công cụ dịch</label>
+            <button type="button" class="info-toggle text-on-surface-variant hover:text-primary transition-colors flex items-center"
+              data-tip="engineTip" aria-expanded="false" aria-label="Giải thích các công cụ dịch">
+              <span class="material-symbols-outlined text-[16px]">info</span>
+            </button>
+          </div>
+          <p id="engineTip" class="hidden font-body-md text-body-md text-on-surface-variant bg-surface-container-high rounded-lg px-3 py-2 mb-2 leading-relaxed">
+            MarianMT chạy ngay trên GPU của hệ thống — nhanh nhất, miễn phí, và là phương án dự phòng khi
+            Gemini/OpenAI gặp lỗi. Gemini và OpenAI dịch tự nhiên hơn với câu phức tạp, nhưng cần bạn tự
+            có API key, tính phí theo lượng chữ, và chậm hơn MarianMT nhiều lần.
+          </p>
           <select id="translator_engine_select" class="{{ field_class }}">
             <option value="marian">MarianMT — chạy offline, miễn phí</option>
             <option value="gemini">Gemini{% if not gemini_key_exists %} — cần API key{% endif %}</option>
@@ -460,6 +482,18 @@
 
     document.getElementById("toggleAdvanced").addEventListener("click", function () {
       document.getElementById("advanced").classList.toggle("hidden");
+    });
+
+    // Bấm nút info để bật/tắt câu giải thích — dùng click chứ không phải hover
+    // vì hover không hoạt động trên điện thoại, mà phần lớn người dùng ở đây
+    // vào bằng điện thoại.
+    document.querySelectorAll(".info-toggle").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        const tip = document.getElementById(btn.dataset.tip);
+        const willShow = tip.classList.contains("hidden");
+        tip.classList.toggle("hidden", !willShow);
+        btn.setAttribute("aria-expanded", String(willShow));
+      });
     });
 
     document.getElementById("original_volume").addEventListener("input", function (e) {

@@ -52,6 +52,20 @@ def test_create_page_keeps_every_field_the_api_reads(as_user):
         assert f'name="{field}"' in body, field
 
 
+# Ba lựa chọn giữa (base/small/medium) và lý do chọn Gemini/OpenAI thay
+# MarianMT trước đây không giải thích gì — người mới dùng phải đoán. Nút info
+# bật/tắt bằng click (không phải hover) vì phần lớn người dùng vào bằng điện
+# thoại, hover không hoạt động trên cảm ứng.
+def test_advanced_fields_have_explanatory_tooltips(as_user):
+    body = as_user.get("/").get_data(as_text=True)
+    for tip_id, trigger_attr in [("whisperTip", 'data-tip="whisperTip"'),
+                                  ("engineTip", 'data-tip="engineTip"')]:
+        assert trigger_attr in body
+        assert f'id="{tip_id}"' in body
+    assert 'class="info-toggle' in body
+    assert "document.querySelectorAll(\".info-toggle\")" in body
+
+
 # ── Theo dõi tiến trình ──────────────────────────────────────
 def test_progress_payload_shape(app, user):
     with app.app_context():
