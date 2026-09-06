@@ -4,7 +4,7 @@
 <head>
   <meta charset="utf-8">
   <meta content="width=device-width, initial-scale=1.0" name="viewport">
-  <title>{% block title %}Video Dubber{% endblock %}</title>
+  <title>{% block title %}Nora{% endblock %}</title>
   {% include '_head.html' %}
   {% block head %}{% endblock %}
 </head>
@@ -19,9 +19,18 @@
   <nav id="sidebar" aria-label="Điều hướng chính"
     class="w-[240px] h-screen flex flex-col border-r border-outline-variant bg-background fixed left-0 top-0 z-50
            -translate-x-full lg:translate-x-0 transition-transform duration-200 ease-out">
-    <div class="px-md py-lg border-b border-outline-variant bg-surface-dim">
-      <h1 class="font-headline-md text-headline-md font-bold text-on-surface tracking-tighter">DUB_STUDIO</h1>
-      <p class="font-label-sm text-label-sm text-on-surface-variant uppercase mt-1">AI Dubbing Engine</p>
+    <div class="px-md py-lg border-b border-outline-variant bg-surface-dim flex items-center gap-3">
+      <div class="w-9 h-9 rounded-[9px] bg-primary flex items-center justify-center flex-shrink-0" aria-hidden="true">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="none">
+          <rect x="4" y="8" width="4" height="8" rx="2" fill="#213600"></rect>
+          <rect x="10" y="4" width="4" height="16" rx="2" fill="#213600"></rect>
+          <rect x="16" y="6" width="4" height="12" rx="2" fill="#213600"></rect>
+        </svg>
+      </div>
+      <div>
+        <h1 class="font-headline-md text-headline-md font-bold text-on-surface tracking-tighter">Nora</h1>
+        <p class="font-label-sm text-label-sm text-on-surface-variant uppercase mt-1">Lồng tiếng bài giảng</p>
+      </div>
     </div>
 
     <div class="p-md">
@@ -98,7 +107,15 @@
           class="-ml-2 p-2 text-on-surface-variant hover:text-on-surface transition-colors">
           <span class="material-symbols-outlined">menu</span>
         </button>
-        <a href="{{ url_for('main.index') }}" class="font-headline-md text-headline-md font-bold tracking-tighter">DUB_STUDIO</a>
+        <a href="{{ url_for('main.index') }}" class="flex items-center gap-2 font-headline-md text-headline-md font-bold tracking-tighter">
+          <span class="w-6 h-6 rounded-md bg-primary flex items-center justify-center flex-shrink-0" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="15" height="15" fill="none">
+              <rect x="4" y="8" width="4" height="8" rx="2" fill="#213600"></rect>
+              <rect x="10" y="4" width="4" height="16" rx="2" fill="#213600"></rect>
+              <rect x="16" y="6" width="4" height="12" rx="2" fill="#213600"></rect>
+            </svg>
+          </span>Nora
+        </a>
       </div>
       <div class="hidden lg:block"></div>
       <div class="flex items-center gap-4">

@@ -4,7 +4,7 @@
 <head>
   <meta charset="utf-8">
   <meta content="width=device-width, initial-scale=1.0" name="viewport">
-  <title>{% block title %}Video Dubber{% endblock %}</title>
+  <title>{% block title %}Nora{% endblock %}</title>
   {% include '_head.html' %}
 </head>
 
@@ -18,7 +18,16 @@
       <div class="absolute top-0 right-0 w-64 h-64 bg-primary-container/5 rounded-bl-full pointer-events-none"></div>
 
       <div class="relative z-10">
-        <div class="text-headline-xl font-headline-xl text-primary tracking-tighter mb-xl">DUB_STUDIO</div>
+        <div class="flex items-center gap-3 mb-xl">
+          <div class="w-11 h-11 rounded-xl bg-primary flex items-center justify-center flex-shrink-0" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="26" height="26" fill="none">
+              <rect x="4" y="8" width="4" height="8" rx="2" fill="#213600"></rect>
+              <rect x="10" y="4" width="4" height="16" rx="2" fill="#213600"></rect>
+              <rect x="16" y="6" width="4" height="12" rx="2" fill="#213600"></rect>
+            </svg>
+          </div>
+          <div class="text-headline-xl font-headline-xl text-primary tracking-tighter">Nora</div>
+        </div>
         <h1 class="text-headline-lg font-headline-lg mb-lg max-w-sm">Lồng tiếng Việt cho video bài giảng</h1>
         <ul class="space-y-md text-body-lg font-body-lg text-on-surface-variant">
           {% for icon, text in [

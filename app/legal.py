@@ -80,7 +80,7 @@ TERMS = [
     {
         "heading": "Đây là gì",
         "paragraphs": [
-            "DUB_STUDIO là công cụ lồng tiếng Việt cho video bài giảng tiếng Anh, "
+            "Nora là công cụ lồng tiếng Việt cho video bài giảng tiếng Anh, "
             "được xây dựng trong khuôn khổ một đồ án tốt nghiệp. Hệ thống cung cấp "
             "miễn phí, không cam kết luôn sẵn sàng, và có thể ngừng hoạt động khi "
             "đồ án kết thúc.",

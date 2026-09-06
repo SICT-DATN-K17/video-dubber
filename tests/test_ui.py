@@ -38,7 +38,7 @@ def test_404_uses_our_template_not_werkzeug_default(as_user):
     html = response.get_data(as_text=True)
     assert response.status_code == 404
     assert "Không tìm thấy trang" in html
-    assert "DUB_STUDIO" in html
+    assert "Nora" in html
     assert "The requested URL was not found" not in html
 
 
@@ -47,7 +47,7 @@ def test_403_page_is_styled_and_in_vietnamese(as_user):
     html = response.get_data(as_text=True)
     assert response.status_code == 403
     assert "Không có quyền truy cập" in html
-    assert "DUB_STUDIO" in html
+    assert "Nora" in html
 
 
 def test_error_page_offers_login_when_signed_out(client):
