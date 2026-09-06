@@ -146,3 +146,19 @@ def test_no_unused_icons_requested(app, client, as_user, as_admin, user):
     found = all_icons_actually_rendered(app, client, as_user, as_admin, user)
     unused = icons_requested() - found
     assert not unused, "icon_names khai thừa, không trang nào dùng tới: " + ", ".join(sorted(unused))
+
+
+# ── Icon tab trình duyệt ─────────────────────────────────────
+def test_favicon_links_present_and_cache_busted(client):
+    html = client.get("/login").get_data(as_text=True)
+    assert re.search(r'rel="icon" href="/static/img/favicon\.svg\?v=[0-9a-f]{10}"', html)
+    assert re.search(r'rel="icon" href="/static/img/favicon-32\.png\?v=[0-9a-f]{10}"', html)
+    assert re.search(r'rel="icon" href="/static/img/favicon\.ico\?v=[0-9a-f]{10}"', html)
+    assert re.search(r'rel="apple-touch-icon" href="/static/img/apple-touch-icon\.png\?v=[0-9a-f]{10}"', html)
+
+
+def test_favicon_files_exist():
+    img_dir = ROOT / "static" / "img"
+    for name in ["favicon.svg", "favicon-16.png", "favicon-32.png", "favicon-48.png",
+                 "favicon.ico", "apple-touch-icon.png"]:
+        assert (img_dir / name).exists(), f"Thiếu static/img/{name}"

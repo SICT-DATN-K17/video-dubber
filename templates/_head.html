@@ -1,5 +1,14 @@
 {# Phan <head> dung chung cho ca trang da dang nhap lan trang dang nhap. #}
 
+  {# Icon tab trinh duyet. SVG dat truoc vi trinh duyet hien dai doc no chinh,
+     bo qua .ico phia sau; ba file con lai la du phong cho trinh duyet cu va
+     man hinh chinh iOS. Dung asset() de gan ma bam — doi anh thi URL doi theo,
+     khong ai bi ket cache icon cu. #}
+  <link rel="icon" href="{{ asset('img/favicon.svg') }}" type="image/svg+xml">
+  <link rel="icon" href="{{ asset('img/favicon-32.png') }}" sizes="32x32" type="image/png">
+  <link rel="icon" href="{{ asset('img/favicon.ico') }}" sizes="any">
+  <link rel="apple-touch-icon" href="{{ asset('img/apple-touch-icon.png') }}">
+
   {# CSS bien dich san bang `npm run build:css`. Truoc day day la
      cdn.tailwindcss.com: 417 KB JavaScript tai ve roi bien dich CSS ngay tren
      trinh duyet o MOI lan mo trang — chinh Tailwind ghi ro ban do chi de thu
