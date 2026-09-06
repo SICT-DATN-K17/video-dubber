@@ -1,0 +1,34 @@
+# Ảnh Modal RIÊNG cho container web (xem web_image trong modal_app.py).
+#
+# Đây là tập con của requirements.txt — cố tình bỏ torch/faster-whisper/
+# openai-whisper/transformers/sentencepiece/gTTS/edge-tts/pydub/soundfile
+# và cả openai/google-genai: trang web không bao giờ import trực tiếp những
+# gói đó. Nó chỉ gọi Dubber TỪ XA qua modal.Cls(...).run.spawn(...) — container
+# GPU riêng, dùng requirements.txt đầy đủ, mới thật sự cần các gói đó.
+#
+# Container nguội trước đây phải kéo cả ~2,5 GB torch+CUDA về trước khi Flask
+# kịp chạy dòng đầu tiên (~10,5s đo được trên production). Ảnh này bỏ hẳn
+# phần đó, hạ khởi động nguội xuống còn khoảng 1-2 giây.
+#
+# Đổi requirements.txt (phần Web) thì nhớ đổi luôn ở đây — hai file không tự
+# đồng bộ. requirements-dev.txt (chạy test cục bộ) cũng nên khớp phần này.
+
+# ── Web ──────────────────────────────────────────────
+Flask==3.1.3
+Werkzeug==3.1.8
+Flask-SQLAlchemy==3.1.1
+Flask-Login==0.6.3
+Flask-WTF==1.3.0
+Flask-Migrate==4.1.0
+Flask-Limiter==4.1.1
+Authlib==1.8.0
+# Authlib goi HTTP qua requests
+requests==2.33.1
+# Driver Postgres cho production (Neon/Supabase)
+psycopg[binary]==3.3.4
+waitress==3.0.2
+# Chi can khi deploy len Modal
+modal==1.5.5
+
+# ── Cấu hình ─────────────────────────────────────────
+python-dotenv==1.2.2

@@ -28,6 +28,25 @@ APP_NAME = "video-dubber"
 data_volume = modal.Volume.from_name("dubber-data", create_if_missing=True)
 model_volume = modal.Volume.from_name("dubber-models", create_if_missing=True)
 
+SOURCE_IGNORE = [
+    ".env*",          # KHONG bao gio dong goi secret vao image
+    "!.env.example",
+    ".git/**",
+    "data/**",
+    "design/**",   # mockup tu Stitch, khong can trong image
+    "**/__pycache__/**",
+    "**/*.pyc",
+    "*.mp4",
+    "*.wav",
+    ".venv/**",
+    "venv/**",
+    "node_modules/**",  # chi dung luc build CSS tren may local
+    "assets/**",        # nguon cua static/css/app.css, image chi can ban da build
+]
+
+# Anh day du — dung cho container GPU (Dubber) va migrate. Co torch + CUDA
+# (~2,5 GB), faster-whisper, transformers... nhung dang bi web() dung chung
+# du khong bao gio cham toi. Xem web_image ben duoi.
 image = (
     modal.Image.debian_slim(python_version="3.12")
     .apt_install("ffmpeg")
@@ -35,25 +54,27 @@ image = (
     # add_local_* phai la lop CUOI CUNG — Modal cam moi build step sau no.
     # Mount vao /root vi do la thu muc lam viec mac dinh cua container;
     # de o cho khac thi `from wsgi import app` se khong tim thay module.
-    .add_local_dir(
-        ".",
-        remote_path="/root",
-        ignore=[
-            ".env*",          # KHONG bao gio dong goi secret vao image
-            "!.env.example",
-            ".git/**",
-            "data/**",
-            "design/**",   # mockup tu Stitch, khong can trong image
-            "**/__pycache__/**",
-            "**/*.pyc",
-            "*.mp4",
-            "*.wav",
-            ".venv/**",
-            "venv/**",
-            "node_modules/**",  # chi dung luc build CSS tren may local
-            "assets/**",        # nguon cua static/css/app.css, image chi can ban da build
-        ],
-    )
+    .add_local_dir(".", remote_path="/root", ignore=SOURCE_IGNORE)
+)
+
+# Anh RIENG, nhe, cho web() — web khong bao gio import truc tiep torch/
+# faster-whisper/transformers/openai/google-genai: no chi goi Dubber TU XA
+# qua modal.Cls(...).run.spawn(...) (xem _spawn_on_modal trong app/jobs.py),
+# khong bao gio chay vao cac nhanh nap model o core/transcriber.py hay
+# core/translator/*.py (deu import cac goi nang o TRONG ham, khong o dau
+# file — da kiem tra truoc khi tach anh nay).
+#
+# Container web nguoi (sau 60s khong ai dung, xem scaledown_window ben duoi)
+# truoc day phai keo ca anh nang ay ve truoc khi Flask kip chay dong dau:
+# do duoc ~10,5 giay tren production. Anh nay ha xuong con khoang 1-2 giay.
+#
+# requirements-web.txt la tap con thu cong cua requirements.txt — doi phan
+# Web o file kia thi nho doi ca o day.
+web_image = (
+    modal.Image.debian_slim(python_version="3.12")
+    .apt_install("ffmpeg")  # /healthz kiem tra co ffmpeg — nhe, khong phai nguon phinh anh
+    .pip_install_from_requirements("requirements-web.txt")
+    .add_local_dir(".", remote_path="/root", ignore=SOURCE_IGNORE)
 )
 
 # Bien moi truong dat o muc function (chi ton tai luc chay), KHONG dat trong
@@ -79,8 +100,9 @@ VOLUMES = {"/data": data_volume, "/models": model_volume}
 
 # Khong dat min_containers: container web luon-chay bi tinh tien 24/7 (~$4-6/thang)
 # du khong ai dung. Doi lai lan truy cap dau tien sau luc rieng phai cho container
-# khoi dong vai giay. Voi du an demo thi danh doi nay dang gia.
-@app.function(volumes=VOLUMES, secrets=secrets, env=RUNTIME_ENV, timeout=900)
+# khoi dong vai giay. Voi du an demo thi danh doi nay dang gia — nhung khoi
+# dong nguoi gio chi con ~1-2 giay nho web_image, khong phai ~10,5 giay nua.
+@app.function(image=web_image, volumes=VOLUMES, secrets=secrets, env=RUNTIME_ENV, timeout=900)
 @modal.concurrent(max_inputs=20)
 @modal.wsgi_app()
 def web():
