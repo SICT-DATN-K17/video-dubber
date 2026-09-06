@@ -166,6 +166,30 @@ def test_job_page_polling_recovers_instead_of_dying_on_first_error(app, as_user,
     assert "clearInterval(poller)" not in body
 
 
+# ── Lời thoại tương tác ────────────────────────────────────────
+# Cũng như polling: hành vi thật (bấm dòng thì video nhảy, dòng đang phát tự
+# sáng) chạy trên trình duyệt nên pytest không giả lập được. Test canh cấu
+# trúc mã đã gửi cho trình duyệt, và canh đúng cờ IS_DONE theo từng trạng thái.
+def test_done_job_page_ships_transcript_panel(app, as_user, user):
+    with app.app_context():
+        job_id = make_job(user, status=JobStatus.DONE, progress=100).id
+    body = as_user.get(f"/job/{job_id}").get_data(as_text=True)
+    assert 'id="transcriptPanel"' in body
+    assert 'id="transcriptSearch"' in body
+    assert "const IS_DONE = true;" in body
+    assert f'"/api/jobs/" + JOB_ID + "/segments"' in body
+
+
+@pytest.mark.parametrize("status", [JobStatus.PROCESSING, JobStatus.FAILED, JobStatus.QUEUED])
+def test_non_done_job_page_skips_transcript_fetch(app, as_user, user, status):
+    """Chỉ job đã xong mới có video để nhảy tới — job đang chạy hay job hỏng
+    thì chưa/không có gì để hiện, không nên gọi API vô ích."""
+    with app.app_context():
+        job_id = make_job(user, status=status, progress=10).id
+    body = as_user.get(f"/job/{job_id}").get_data(as_text=True)
+    assert "const IS_DONE = false;" in body
+
+
 def test_finished_job_page_has_no_polling_script(app, as_user, user):
     """Job đã xong thì không cần lấy tiến trình nữa — đỡ tốn request vô ích."""
     with app.app_context():
