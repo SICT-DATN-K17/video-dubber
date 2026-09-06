@@ -9,6 +9,7 @@ import time
 from typing import Callable, Dict, List, TypeVar
 
 from config.settings import AI_PRESERVE_TERMS, LLM_MAX_RETRIES
+from core.transcriber import Segment
 
 T = TypeVar("T")
 
@@ -53,6 +54,31 @@ def parse_numbered_lines(raw: str) -> Dict[int, str]:
                     pass
                 break
     return parts
+
+
+def fill_batch_gaps(batch: List[Segment], parts: Dict[int, str], translate_one: Callable[[str], str]) -> None:
+    """Điền chỗ trống khi parse_numbered_lines() thiếu dòng cho một câu trong
+    batch — mô hình đôi khi gộp hai câu vào một dòng hay bỏ sót một số thứ
+    tự dù prompt đã yêu cầu đúng số dòng. Bug thật gặp trên production: câu
+    thiếu dòng bị nhét thẳng nguyên văn tiếng Anh vào seg.translated, kéo
+    theo TTS đọc tiếng Anh bằng giọng tiếng Việt — nghe sai hẳn, không phải
+    "AI ảo giác" mà là dịch thất bại trong im lặng.
+
+    Trước khi chấp nhận giữ nguyên bản gốc, thử dịch lại RIÊNG đúng câu đó
+    một lần — translate_one (translate_text của chính engine đang dùng) đã
+    có sẵn cơ chế thử lại khi lỗi tạm thời, nên đây gần như luôn sửa được
+    trừ khi API thật sự không dùng được."""
+    for j, seg in enumerate(batch):
+        translated = parts.get(j + 1)
+        if translated:
+            seg.translated = translated
+            continue
+        try:
+            seg.translated = translate_one(seg.text)
+        except Exception:
+            # Dịch lại cũng hỏng — thà còn tiếng Anh (ít nhất TTS còn phát ra
+            # âm thanh có nghĩa) còn hơn để trống hẳn khoảng thời gian đó.
+            seg.translated = seg.text
 
 
 # ── Thử lại khi API trả lỗi tạm thời ─────────────────────────

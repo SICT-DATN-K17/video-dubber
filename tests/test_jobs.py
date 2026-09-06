@@ -192,6 +192,11 @@ def test_done_job_page_ships_transcript_panel(app, as_user, user):
     assert 'id="transcriptSearch"' in body
     assert "const IS_DONE = true;" in body
     assert f'"/api/jobs/" + JOB_ID + "/segments"' in body
+    # Câu dịch thất bại (seg.vi trùng hệt seg.en, xem test_llm_translation.py)
+    # phải hiện một dòng kèm dấu "chưa dịch", không phải hai dòng giống hệt
+    # nhau — bug thật từng gặp trên production trước khi vá.
+    assert "seg.vi.trim() === seg.en.trim()" in body
+    assert "chưa dịch" in body
 
 
 @pytest.mark.parametrize("status", [JobStatus.PROCESSING, JobStatus.FAILED, JobStatus.QUEUED])

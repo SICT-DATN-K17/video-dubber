@@ -15,6 +15,7 @@ from core.translator.llm_common import (
     SYSTEM_PROMPT,
     build_batch_prompt,
     call_with_retry,
+    fill_batch_gaps,
     parse_numbered_lines,
 )
 from core.transcriber import Segment
@@ -97,8 +98,6 @@ class GeminiTranslator(BaseTranslator):
                 what=f"Gemini batch {i // batch_size + 1}",
             )
             parts = parse_numbered_lines(raw)
-
-            for j, seg in enumerate(batch):
-                seg.translated = parts.get(j + 1) or seg.text
+            fill_batch_gaps(batch, parts, self.translate_text)
 
         return segments

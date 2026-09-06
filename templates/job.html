@@ -233,14 +233,23 @@
 
       function renderRows() {
         list.innerHTML = segments.map(function (seg, i) {
-          const secondLine = (seg.vi && seg.en)
+          // Dịch câu này thất bại (kể cả sau khi hệ thống đã tự thử lại) thì
+          // seg.vi trùng hệt seg.en — đừng hiện hai dòng giống hệt nhau,
+          // hiện một dòng kèm dấu hiệu rõ ràng thay vì trông như lỗi hiển thị.
+          const untranslated = !!(seg.vi && seg.en && seg.vi.trim() === seg.en.trim());
+          const mainText = seg.vi || seg.en || "—";
+          const badge = untranslated
+            ? '<span class="font-label-sm text-label-sm text-tertiary flex-shrink-0" title="Không dịch được câu này, đang hiện bản gốc tiếng Anh">chưa dịch</span>'
+            : "";
+          const secondLine = (seg.vi && seg.en && !untranslated)
             ? '<span class="font-body-md text-body-md text-on-surface-variant pl-[52px]">' + escapeHtml(seg.en) + "</span>"
             : "";
           return '<button type="button" data-i="' + i + '" ' +
             'class="transcript-row w-full text-left px-3 py-2 rounded-lg hover:bg-surface-container-high/60 transition-colors flex flex-col gap-0.5">' +
             '<span class="flex items-center gap-2">' +
             '<span class="tabular font-label-sm text-label-sm text-on-surface-variant flex-shrink-0">' + formatTime(seg.start) + "</span>" +
-            '<span class="font-body-md text-body-md text-on-surface flex-1">' + escapeHtml(seg.vi || seg.en || "—") + "</span>" +
+            '<span class="font-body-md text-body-md text-on-surface flex-1">' + escapeHtml(mainText) + "</span>" +
+            badge +
             "</span>" + secondLine + "</button>";
         }).join("");
       }
