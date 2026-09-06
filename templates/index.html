@@ -65,6 +65,13 @@
           <span class="material-symbols-outlined text-[18px]">delete</span><span class="hidden sm:inline">Xoá</span>
         </button>
       </div>
+
+      {# Bắt lỗi ngay khi chọn file, trước khi tải lên — chọn nhầm định dạng
+         hay file quá to thì biết ngay, khỏi đợi tải xong mới bị server từ chối. #}
+      <p id="fileValidationError" class="hidden items-center gap-2 font-body-md text-body-md text-error">
+        <span class="material-symbols-outlined text-[18px]">error</span>
+        <span id="fileValidationMessage"></span>
+      </p>
     </section>
 
     {# ── Bước 2: chất lượng ───────────────────────────── #}
@@ -298,6 +305,55 @@
       return mb >= 1024 ? (mb / 1024).toFixed(2) + " GB" : mb.toFixed(1) + " MB";
     }
 
+    // Khớp đúng ALLOWED_VIDEO_EXTENSIONS ở app/api.py — đổi ở một bên thì nhớ
+    // đổi bên kia, hai nơi này validate độc lập (client chỉ để phản hồi
+    // nhanh, server vẫn là nơi quyết định thật).
+    const ALLOWED_EXTENSIONS = [".mp4", ".mov", ".avi", ".mkv", ".webm"];
+    const MAX_UPLOAD_BYTES = {{ max_upload_mb }} * 1024 * 1024;
+
+    /** Trả về câu lỗi tiếng Việt nếu file không hợp lệ, null nếu ổn. */
+    function fileError(file) {
+      const name = (file.name || "").toLowerCase();
+      const dot = name.lastIndexOf(".");
+      const ext = dot === -1 ? "" : name.slice(dot);
+      if (!ALLOWED_EXTENSIONS.includes(ext)) {
+        return "Không hỗ trợ định dạng " + (ext || "này") + ". Chỉ nhận " +
+          ALLOWED_EXTENSIONS.join(", ").toUpperCase().replace(/\./g, "") + ".";
+      }
+      if (file.size === 0) {
+        return "File rỗng, không tải lên được.";
+      }
+      if (file.size > MAX_UPLOAD_BYTES) {
+        return "File " + humanSize(file.size) + " vượt quá giới hạn {{ max_upload_mb }} MB.";
+      }
+      return null;
+    }
+
+    function showFileError(message) {
+      document.getElementById("fileValidationMessage").textContent = message;
+      document.getElementById("fileValidationError").classList.replace("hidden", "flex");
+      preview.classList.add("hidden");
+      dropzone.classList.remove("hidden");
+      submitBtn.disabled = true;
+      submitHint.textContent = "Chọn video khác";
+    }
+
+    function hideFileError() {
+      document.getElementById("fileValidationError").classList.replace("flex", "hidden");
+    }
+
+    /** Kiểm tra rồi mới hiện xem trước — sai định dạng hay quá dung lượng thì
+     * báo ngay, khỏi đợi tải hết dung lượng lớn mới bị server từ chối. */
+    function handleSelectedFile(file) {
+      const err = fileError(file);
+      if (err) {
+        showFileError(err);
+        return;
+      }
+      hideFileError();
+      showFile(file);
+    }
+
     function showFile(file) {
       document.getElementById("fileName").textContent = file.name;
       document.getElementById("fileSize").textContent = humanSize(file.size);
@@ -330,11 +386,12 @@
     }
 
     fileInput.addEventListener("change", function () {
-      if (fileInput.files.length) showFile(fileInput.files[0]);
+      if (fileInput.files.length) handleSelectedFile(fileInput.files[0]);
     });
 
     document.getElementById("clearFile").addEventListener("click", function () {
       fileInput.value = "";
+      hideFileError();
       preview.classList.add("hidden");
       dropzone.classList.remove("hidden");
       submitBtn.disabled = true;
@@ -350,7 +407,7 @@
     dropzone.addEventListener("drop", function (e) {
       if (e.dataTransfer.files.length) {
         fileInput.files = e.dataTransfer.files;
-        showFile(e.dataTransfer.files[0]);
+        handleSelectedFile(e.dataTransfer.files[0]);
       }
     });
 

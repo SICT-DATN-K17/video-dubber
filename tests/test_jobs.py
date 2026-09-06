@@ -29,6 +29,19 @@ def test_upload_wrong_format_rejected(as_user):
     assert "Định dạng" in response.get_json()["error"]
 
 
+# Kiểm tra trước khi tải lên chạy trên trình duyệt — pytest không có trình
+# duyệt để giả lập kéo-thả hay đọc file.size thật, nên canh HTML đã render
+# chứa đúng danh sách định dạng và đúng giới hạn dung lượng của SERVER (không
+# phải một con số chép tay có thể lệch dần theo thời gian).
+def test_index_page_ships_client_side_upload_validation(as_user):
+    from config.settings import MAX_UPLOAD_MB
+
+    body = as_user.get("/").get_data(as_text=True)
+    assert 'id="fileValidationError"' in body
+    assert '".mp4", ".mov", ".avi", ".mkv", ".webm"' in body
+    assert f"MAX_UPLOAD_BYTES = {MAX_UPLOAD_MB} * 1024 * 1024" in body
+
+
 def test_create_page_keeps_every_field_the_api_reads(as_user):
     """Đổi tên một trường trong template là upload gãy im lặng."""
     body = as_user.get("/").get_data(as_text=True)
