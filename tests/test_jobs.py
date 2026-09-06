@@ -226,6 +226,22 @@ def test_history_page_renders(as_user):
     assert 'id="emptyState"' in body
 
 
+# Bản cũ chỉ tải một lần lúc mở trang — job "Đang xử lý" nằm im trong bảng
+# cho tới khi tự tay F5. Cũng như polling ở job.html, hành vi tự làm mới chạy
+# hoàn toàn trên trình duyệt nên pytest không giả lập được; canh cấu trúc mã
+# đã gửi thay cho hành vi runtime.
+def test_history_page_ships_auto_refresh_for_running_jobs(as_user):
+    body = as_user.get("/lich-su").get_data(as_text=True)
+    assert "scheduleRefresh" in body
+    assert 'job.status === "queued" || job.status === "processing"' in body
+    # Chỉ hẹn giờ lại khi còn job chưa xong — không thấy dòng chặn này thì
+    # trang sẽ hỏi server vô ích mãi kể cả khi mọi job đã xong từ lâu.
+    assert "if (items && !hasActiveJob(items)) return;" in body
+    # Tự làm mới không được nháy khung xương lên — silent bỏ qua bước đó.
+    assert "if (!silent) skeleton.classList.remove" in body
+    assert 'addEventListener("visibilitychange"' in body
+
+
 def test_history_lists_own_jobs_paginated(as_user, many_jobs):
     data = as_user.get("/api/jobs").get_json()
     assert data["total"] == 26

@@ -109,6 +109,38 @@
     const state = { status: "all", engine: "all", q: "", page: 1 };
     let timer = null;
 
+    // ── Tự làm mới khi còn job đang chạy ─────────────────
+    // Trước đây trang chỉ tải một lần lúc mở — job đang "Đang xử lý" nằm im
+    // trong bảng cho tới khi tự tay F5. Chỉ hẹn giờ lại khi TRANG KẾT QUẢ
+    // HIỆN TẠI còn job chưa xong; xong hết rồi thì thôi, đỡ hỏi server vô ích.
+    const REFRESH_INTERVAL_MS = 5000;
+    const MAX_REFRESH_FAILURES = 10;
+    let refreshTimer = null;
+    let consecutiveRefreshFailures = 0;
+
+    function hasActiveJob(items) {
+      return items.some(function (job) { return job.status === "queued" || job.status === "processing"; });
+    }
+
+    function scheduleRefresh(items) {
+      clearTimeout(refreshTimer);
+      refreshTimer = null;
+      // items là null khi lần gọi trước bị lỗi — không biết còn job đang chạy
+      // hay không, nên cứ thử lại; biết chắc hết việc rồi (mảng thật) thì thôi.
+      if (items && !hasActiveJob(items)) return;
+      if (document.hidden) return; // tab đang ẩn — visibilitychange sẽ đánh thức lại
+      refreshTimer = setTimeout(function () { load(true); }, REFRESH_INTERVAL_MS);
+    }
+
+    document.addEventListener("visibilitychange", function () {
+      if (document.hidden) {
+        clearTimeout(refreshTimer);
+        refreshTimer = null;
+      } else {
+        load(true); // vừa xem lại tab — làm mới ngay, khỏi đợi hết nhịp cũ
+      }
+    });
+
     const rows = document.getElementById("rows");
     const empty = document.getElementById("emptyState");
     const skeleton = document.getElementById("skeleton");
@@ -180,8 +212,13 @@
       pager.classList.toggle("hidden", data.pages <= 1 && data.total <= data.per_page);
     }
 
-    async function load() {
-      skeleton.classList.remove("hidden");
+    /** silent=true là lần tự làm mới ở nền — không nháy khung xương lên, đỡ
+     * giật mắt giữa lúc người dùng không thao tác gì; lỗi cũng im lặng thử
+     * lại thay vì đè cả bảng bằng dòng lỗi đỏ. */
+    async function load(silent) {
+      clearTimeout(refreshTimer);
+      refreshTimer = null;
+      if (!silent) skeleton.classList.remove("hidden");
       const params = new URLSearchParams({
         status: state.status, engine: state.engine, q: state.q, page: state.page
       });
@@ -190,10 +227,17 @@
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || "Không tải được lịch sử.");
         render(data);
+        consecutiveRefreshFailures = 0;
+        scheduleRefresh(data.items);
       } catch (err) {
-        skeleton.classList.add("hidden");
-        rows.innerHTML = '<tr><td colspan="7" class="px-4 py-6 text-center text-error font-body-md text-body-md">' +
-          escapeHtml(err.message) + "</td></tr>";
+        if (silent) {
+          consecutiveRefreshFailures += 1;
+          if (consecutiveRefreshFailures < MAX_REFRESH_FAILURES) scheduleRefresh(null);
+        } else {
+          skeleton.classList.add("hidden");
+          rows.innerHTML = '<tr><td colspan="7" class="px-4 py-6 text-center text-error font-body-md text-body-md">' +
+            escapeHtml(err.message) + "</td></tr>";
+        }
       }
     }
 
