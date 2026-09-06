@@ -96,13 +96,21 @@ secrets = [
 ]
 
 VOLUMES = {"/data": data_volume, "/models": model_volume}
+# web chi phuc vu file da co san qua OUTPUT_DIR (duoi /data) — chua bao gio
+# doc/ghi /models, do chi la noi Dubber cache trong so Whisper/MarianMT.
+WEB_VOLUMES = {"/data": data_volume}
 
 
-# Khong dat min_containers: container web luon-chay bi tinh tien 24/7 (~$4-6/thang)
-# du khong ai dung. Doi lai lan truy cap dau tien sau luc rieng phai cho container
-# khoi dong vai giay. Voi du an demo thi danh doi nay dang gia — nhung khoi
-# dong nguoi gio chi con ~1-2 giay nho web_image, khong phai ~10,5 giay nua.
-@app.function(image=web_image, volumes=VOLUMES, secrets=secrets, env=RUNTIME_ENV, timeout=900)
+# min_containers=1: do bang log that cua Modal (cot "duration" tru cot
+# "execution") cho thay khoang 5,5-7,9 giay trong moi lan khoi dong nguoi la
+# CHI PHI DUNG CONTAINER MOI cua Modal (cap may, mount image, khoi dong
+# Python) — xay ra TRUOC ca dong code Flask dau tien, gan nhu khong phu
+# thuoc dung luong image. Tach web_image nhe hon (thuong nay) chi giam duoc
+# phan "execution", khong dong gi vao phan nay. Cach duy nhat trieu tieu no
+# la giu container luon co san. Doi lai la tra tien 24/7 du khong ai dung —
+# anh nay da nhe (khong con torch), nen re hon con so ~$4-6/thang uoc tinh
+# truoc do tren anh nang.
+@app.function(image=web_image, volumes=WEB_VOLUMES, secrets=secrets, env=RUNTIME_ENV, timeout=900, min_containers=1)
 @modal.concurrent(max_inputs=20)
 @modal.wsgi_app()
 def web():
